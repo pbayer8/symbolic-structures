@@ -1,13 +1,21 @@
 import REGL from "regl";
+import depth from "./depth.png";
 import img from "./image.png";
 import "./style.css";
 
 const regl = REGL();
-
+let mouse = [0, 0];
+document.addEventListener("mousemove", (e) => {
+  mouse[0] = -(e.clientX / window.innerWidth) * 2 + 1;
+  mouse[1] = (e.clientY / window.innerHeight) * 2 - 1;
+});
 var im = new Image();
 im.src = img;
+var dep = new Image();
+dep.src = depth;
 im.onload = () => {
   const imgTexture = regl.texture({ data: im, flipY: true });
+  const depthTexture = regl.texture({ data: dep, flipY: true });
 
   const INITIAL_CONDITIONS = Array(window.innerWidth * window.innerHeight * 4)
     .fill(0)
@@ -52,6 +60,8 @@ im.onload = () => {
   precision mediump float;
   uniform sampler2D prevState;
   uniform sampler2D imageTexture;
+  uniform sampler2D depthTexture;
+  uniform vec2 mouse;
   varying vec2 uv;
   void main() {
     vec2 imUv = uv;
@@ -68,8 +78,15 @@ im.onload = () => {
       // The image is wider than the canvas
       imUv.y = uv.y / ratio + (1.0 - 1.0 / ratio) / 2.0;
     }
-    float state = texture2D(prevState, uv).r;
-    gl_FragColor = vec4(vec3(state) + texture2D(imageTexture, imUv).rgb, 1);
+    float strength = 0.5;
+    float depth = texture2D(depthTexture, imUv).r * strength;
+    float distortedDepth = texture2D(depthTexture, imUv+depth*mouse).r * strength;
+    vec3 color =           texture2D(imageTexture, imUv+distortedDepth*mouse).rgb;
+    
+    // float state = texture2D(prevState, imUv).r;
+    // imUv += state*.01;
+    // gl_FragColor = vec4(vec3(state) + texture2D(imageTexture, imUv).rgb, 1);
+    gl_FragColor = vec4(color, 1);
   }`,
 
     vert: `
@@ -88,6 +105,8 @@ im.onload = () => {
     uniforms: {
       prevState: ({ tick }) => state[tick % 2],
       imageTexture: imgTexture,
+      depthTexture: depthTexture,
+      mouse: () => mouse,
     },
 
     depth: { enable: false },
