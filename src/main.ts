@@ -78,14 +78,14 @@ im.onload = () => {
       // The image is wider than the canvas
       imUv.y = uv.y / ratio + (1.0 - 1.0 / ratio) / 2.0;
     }
-    float strength = 0.5;
-    float depth = texture2D(depthTexture, imUv).r * strength;
-    float distortedDepth = texture2D(depthTexture, imUv+depth*mouse).r * strength;
-    vec3 color =           texture2D(imageTexture, imUv+distortedDepth*mouse).rgb;
-    
-    // float state = texture2D(prevState, imUv).r;
-    // imUv += state*.01;
-    // gl_FragColor = vec4(vec3(state) + texture2D(imageTexture, imUv).rgb, 1);
+    float strength = 0.3;
+    float depth =( texture2D(depthTexture, imUv).r -.5)* strength;
+    float distortedDepth = (texture2D(depthTexture, imUv+depth*mouse).r-.5) * strength;
+    imUv += distortedDepth*mouse;
+    float state = texture2D(prevState, imUv).r;
+    imUv += state*.01;
+    vec3 color = texture2D(imageTexture, imUv).rgb;
+    // gl_FragColor = vec4(vec3(state) + cop, 1);
     gl_FragColor = vec4(color, 1);
   }`,
 
