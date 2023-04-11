@@ -5,15 +5,8 @@ import "./style.css";
 
 const regl = REGL();
 let mouse = [0, 0];
-document.addEventListener("mousemove", (e) => {
-  mouse[0] = -(e.clientX / window.innerWidth) * 2 + 1;
-  mouse[1] = (e.clientY / window.innerHeight) * 2 - 1;
-});
-var im = new Image();
-im.src = img;
-var dep = new Image();
-dep.src = depth;
-im.onload = () => {
+
+const setup = () => {
   const imgTexture = regl.texture({ data: im, flipY: true });
   const depthTexture = regl.texture({ data: dep, flipY: true });
 
@@ -71,19 +64,32 @@ im.onload = () => {
     float canvasAspectRatio = canvasSize.x / canvasSize.y;
     float imageAspectRatio = imageSize.x / imageSize.y;
     float ratio = canvasAspectRatio / imageAspectRatio;
+    vec2 mouseUv = vec2(mouse.x + .5, mouse.y - .5);
+    // if (canvasAspectRatio > imageAspectRatio) {
+    //   imUv.x = uv.x * ratio + (1.0 - ratio) / 2.0;
+    // } else {
+    //   imUv.y = uv.y / ratio + (1.0 - 1.0 / ratio) / 2.0;
+    // }
     if (canvasAspectRatio > imageAspectRatio) {
       // The image is taller than the canvas
-      imUv.x = uv.x * ratio + (1.0 - ratio) / 2.0;
+      imUv.y = uv.y / ratio + (1.0 - 1.0 / ratio) / 2.0 - (mouseUv.y)*(canvasAspectRatio/imageAspectRatio)*.15;
     } else {
       // The image is wider than the canvas
-      imUv.y = uv.y / ratio + (1.0 - 1.0 / ratio) / 2.0;
+      imUv.x = uv.x * ratio + (1.0 - ratio) / 2.0 - (mouseUv.x)*(imageAspectRatio/canvasAspectRatio)*.15;
     }
     float strength = 0.3;
     float depth =( texture2D(depthTexture, imUv).r -.5)* strength;
-    float distortedDepth = (texture2D(depthTexture, imUv+depth*mouse).r-.5) * strength;
-    imUv += distortedDepth*mouse;
+    float distortedDepth = (texture2D(depthTexture, imUv+depth*mouseUv).r-.5) * strength;
+    imUv += distortedDepth*mouseUv;
     float state = texture2D(prevState, imUv).r;
-    imUv += state*.01;
+    float gaussianState = state;
+    for(int dx=-1; dx<=1; ++dx)
+    for(int dy=-1; dy<=1; ++dy) {
+      gaussianState += texture2D(prevState, imUv+vec2(dx,dy)/vec2(${window.innerWidth}., ${window.innerHeight}.)).r;
+    }
+    float blurredState = gaussianState/9.0;
+    imUv.y += blurredState*distortedDepth*.2;
+    // imUv += blurredState*texture2D(depthTexture, imUv).r*.05;
     vec3 color = texture2D(imageTexture, imUv).rgb;
     // gl_FragColor = vec4(vec3(state) + cop, 1);
     gl_FragColor = vec4(color, 1);
@@ -121,3 +127,19 @@ im.onload = () => {
     });
   });
 };
+
+document.addEventListener("mousemove", (e) => {
+  mouse[0] = -(e.clientX / window.innerWidth);
+  mouse[1] = e.clientY / window.innerHeight;
+});
+
+document.addEventListener("touchmove", (e) => {
+  mouse[0] = -(e.touches[0].clientX / window.innerWidth);
+  mouse[1] = e.touches[0].clientY / window.innerHeight;
+});
+
+var im = new Image();
+im.src = img;
+var dep = new Image();
+dep.src = depth;
+im.onload = setup;
