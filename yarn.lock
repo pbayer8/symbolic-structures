@@ -150,12 +150,22 @@ function-bind@^1.1.1:
   resolved "https://registry.yarnpkg.com/function-bind/-/function-bind-1.1.1.tgz#a56899d3ea3c9bab874bb9773b7c5ede92f4895d"
   integrity sha512-yIovAzMX49sF8Yl58fSCWJ5svSLuaibPxXQJFLmBObTuCr0Mf1KiPopGM9NiFjiYBCbfaa2Fh6breQ6ANVTI0A==
 
+gl-mat4@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/gl-mat4/-/gl-mat4-1.2.0.tgz#49d8a7636b70aa00819216635f4a3fd3f4669b26"
+  integrity sha512-sT5C0pwB1/e9G9AvAoLsoaJtbMGjfd/jfxo8jMCKqYYEnjZuFvqV5rehqar0538EmssjdDeiEWnKyBSTw7quoA==
+
 has@^1.0.3:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/has/-/has-1.0.3.tgz#722d7cbfc1f6aa8241f16dd814e011e1f41e8796"
   integrity sha512-f2dvO0VU6Oej7RkWJGrehjbzMAjFp5/VKPp5tTpWIV4JHHZK1/BxbFRtf/siA2SWTe09caDmVtYYzWEIbBS4zw==
   dependencies:
     function-bind "^1.1.1"
+
+hsv2rgb@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/hsv2rgb/-/hsv2rgb-1.1.0.tgz#60b0e559a8877d8d2dcce7391bc3b83b007ac9a6"
+  integrity sha512-mTdcckTSppt+cGfHCpqCPGvOKevQILxu8f8gru980mLWjTCydoAQfCjzsaJG/QjWX4/tAaSoMsg1JN2YFRwVgg==
 
 is-core-module@^2.11.0:
   version "2.11.0"
