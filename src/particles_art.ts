@@ -121,7 +121,7 @@ const drawParticles = regl({
   },
   depth: { enable: false },
   uniforms: {
-    time: ({ tick }) => time,
+    time: () => time,
     mouse: () => mouse,
   },
 
