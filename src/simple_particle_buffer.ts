@@ -116,68 +116,17 @@ const drawSprites = regl({
       })
       .reverse(),
   },
-
   uniforms: {
     state: ({ tick }) => SPRITES[tick % 2],
   },
-
   primitive: "points",
-  // offset: (context, { count }) => N * N - count,
-  // elements: null,
-  // count: regl.prop("count"),
   count: N * N,
 });
-
-// let count = 0;
-// const BLOCK = {
-//   data: new Float32Array(4 * BLOCK_SIZE),
-//   width: BLOCK_SIZE,
-//   height: 1,
-// };
-
-// const COUNT_DIV = document.createElement("div");
-// Object.assign(COUNT_DIV.style, {
-//   color: "white",
-//   position: "absolute",
-//   left: "20px",
-//   top: "20px",
-//   "z-index": 20,
-// });
-// document.body.appendChild(COUNT_DIV);
-
-// function toScreen(x, size, pixelRatio) {
-//   return Math.min(Math.max((2.0 * pixelRatio * x) / size - 1.0, -0.999), 0.999);
-// }
-
-// regl.frame(({ tick, drawingBufferWidth, drawingBufferHeight, pixelRatio }) => {
 regl.frame(() => {
-  // const mouseX = toScreen(mouse.x, drawingBufferWidth, pixelRatio);
-  // const mouseY = -toScreen(mouse.y, drawingBufferHeight, pixelRatio);
-
-  // if (mouse.buttons) {
-  //   for (let i = 0; i < BLOCK_SIZE; ++i) {
-  //     BLOCK.data[4 * i] = mouseX;
-  //     BLOCK.data[4 * i + 1] = mouseY;
-  //     BLOCK.data[4 * i + 2] = 0.25 * (Math.random() - 0.5);
-  //     BLOCK.data[4 * i + 3] = Math.random();
-  //   }
-  //   SPRITES[tick % 2].color[0].subimage(
-  //     BLOCK,
-  //     count % N,
-  //     ((count / N) | 0) % N
-  //   );
-  //   count += BLOCK_SIZE;
-  //   COUNT_DIV.innerText = Math.min(count, N * N);
-  // }
-
   updateSprites();
-
   regl.clear({
     color: [0, 0, 0, 1],
     depth: 1,
   });
-
-  drawSprites({
-    // count: Math.min(count, N * N),
-  });
+  drawSprites();
 });
