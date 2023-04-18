@@ -9,21 +9,29 @@ document.addEventListener("mousemove", (e) => {
 });
 
 const quadPoints = [-1, -1, 1, -1, -1, 1, 1, -1, -1, 1, 1, 1];
-
+const basicVert = `precision mediump float;
+attribute vec2 position;
+void main () {
+  gl_Position = vec4(position, 0, 1);
+}`;
 const pingPongPoints = ({
   numPoints,
   updateFrag,
-  uniformsUpdate,
+  updateVert = basicVert,
+  updateUniforms,
   drawFrag,
-  drawVert,
-  uniformsDraw,
+  drawVert = basicVert,
+  drawUniforms,
+  drawBuffers,
 }: {
   numPoints: number;
   updateFrag: string;
-  uniformsUpdate: object;
+  updateUniforms: object;
+  updateVert?: string;
   drawFrag: string;
-  drawVert: string;
-  uniformsDraw: object;
+  drawVert?: string;
+  drawUniforms: object;
+  drawBuffers: REGL.Framebuffer[];
 }) => {
   const radius = Math.ceil(Math.sqrt(numPoints));
   const buffers = Array(2)
@@ -43,11 +51,7 @@ const pingPongPoints = ({
       })
     );
   const update = regl({
-    vert: `precision mediump float;
-      attribute vec2 position;
-      void main () {
-        gl_Position = vec4(position, 0, 1);
-      }`,
+    vert: updateVert,
     frag: updateFrag,
     depth: { enable: false },
     framebuffer: ({ tick }: any) => buffers[(tick + 1) % 2],
@@ -59,7 +63,7 @@ const pingPongPoints = ({
         viewportWidth,
         viewportHeight,
       ],
-      ...uniformsUpdate,
+      ...updateUniforms,
     },
     attributes: {
       position: quadPoints,
@@ -91,14 +95,114 @@ const pingPongPoints = ({
         viewportWidth,
         viewportHeight,
       ],
-      ...uniformsDraw,
+      ...drawUniforms,
     },
     primitive: "points",
     count: N * N,
+    framebuffer: ({ tick }: any) => drawBuffers[(tick + 1) % 2],
+  });
+  return { update, buffers, draw };
+};
+
+const pingPongShader = ({
+  updateFrag,
+  updateVert = basicVert,
+  updateUniforms,
+  drawFrag,
+  drawVert = basicVert,
+  drawUniforms,
+}: {
+  updateFrag: string;
+  updateVert?: string;
+  updateUniforms: object;
+  drawFrag: string;
+  drawVert?: string;
+  drawUniforms: object;
+}) => {
+  const buffers = Array(2)
+    .fill(0)
+    .map(() =>
+      regl.framebuffer({
+        color: regl.texture({
+          shape: [window.innerWidth, window.innerHeight],
+          data: Array(window.innerWidth * window.innerHeight * 4).fill(0),
+        }),
+        depthStencil: false,
+      })
+    );
+  const update = regl({
+    frag: updateFrag,
+    vert: updateVert,
+    depth: { enable: false },
+    framebuffer: ({ tick }: any) => buffers[(tick + 1) % 2],
+    uniforms: {
+      u_state: ({ tick }: any) => buffers[tick % 2],
+      u_tick: ({ tick }) => tick,
+      u_time: ({ time }) => time,
+      u_resolution: ({ viewportWidth, viewportHeight }) => [
+        viewportWidth,
+        viewportHeight,
+      ],
+      ...updateUniforms,
+    },
+    attributes: {
+      position: quadPoints,
+    },
+    primitive: "triangles",
+    elements: null,
+    offset: 0,
+    count: quadPoints.length / 2,
+  });
+  const draw = regl({
+    frag: drawFrag,
+    vert: drawVert,
+    uniforms: {
+      u_state: ({ tick }) => buffers[tick % 2],
+      u_tick: ({ tick }) => tick,
+      u_time: ({ time }) => time,
+      u_resolution: ({ viewportWidth, viewportHeight }) => [
+        viewportWidth,
+        viewportHeight,
+      ],
+      ...drawUniforms,
+    },
+    attributes: {
+      position: quadPoints,
+    },
+    primitive: "triangles",
+    elements: null,
+    offset: 0,
+    count: quadPoints.length / 2,
   });
   return { update, buffers, draw };
 };
 const N = 10;
+const { update, draw, buffers } = pingPongShader({
+  updateFrag: `
+  precision highp float;
+  uniform sampler2D u_state;
+  uniform vec2 u_resolution;
+  void main () {
+    vec2 shape = u_resolution.xy;
+    vec4 prevState = texture2D(u_state,
+      gl_FragCoord.xy / shape);
+    gl_FragColor = prevState;
+  }
+  `,
+  updateUniforms: {},
+  drawFrag: `
+  precision highp float;
+  uniform sampler2D u_state;
+  uniform vec2 u_resolution;
+  void main () {
+    vec2 shape = u_resolution.xy;
+    vec4 prevState = texture2D(u_state,
+      gl_FragCoord.xy / shape);
+    gl_FragColor = prevState;
+  }
+  `,
+  drawUniforms: {},
+});
 const { update: updateSprites, draw: drawSprites } = pingPongPoints({
   numPoints: N * N,
   updateFrag: `precision highp float;
@@ -148,18 +252,21 @@ const { update: updateSprites, draw: drawSprites } = pingPongPoints({
     gl_FragColor = vec4(rg, 1.0 - max(rg.x, rg.y), 1);
   }
   `,
-  uniformsUpdate: {
+  updateUniforms: {
     deltaT: 0.1,
     gravity: -0.5,
   },
-  uniformsDraw: {},
+  drawUniforms: {},
+  drawBuffers: buffers,
 });
 
 regl.frame(() => {
   updateSprites();
+  update();
   regl.clear({
     color: [0, 0, 0, 1],
     depth: 1,
   });
   drawSprites();
+  draw();
 });
