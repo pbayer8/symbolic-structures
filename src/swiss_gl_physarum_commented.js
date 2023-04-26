@@ -133,4 +133,4 @@ function frame(t) {
     // ...this.viewParams,}
     ();
 }
-requestAnimationFrame(frame);
+// requestAnimationFrame(frame);
