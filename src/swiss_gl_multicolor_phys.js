@@ -9,8 +9,10 @@ canvas.height = window.innerHeight;
 document.body.appendChild(canvas);
 // create WebGL2 context end SwissGL
 const glsl = SwissGL(canvas);
+
 const fields = {};
 const fieldFactors = {};
+const colors = {};
 // Create a new Physarum instance
 import GUI from "lil-gui";
 const gui = new GUI();
@@ -43,6 +45,8 @@ class Physarum {
     par("fieldFactor", 0, -5, 5); // Movement distance
     // par("moveDist", 2, 0, 10); // Movement distance
     // par("viewScale", 1, 1, 1, 1); // View scale factor
+    U["displayColor"] = [Math.random(), Math.random(), Math.random(), 1];
+    gui.addColor(U, "displayColor");
   }
 
   // Method to run the simulation for a certain number of steps
@@ -54,6 +58,7 @@ class Physarum {
     glsl({
       ...fields,
       ...this.U,
+      ...colors,
       // FP: `FOut.${this.channel} = field(UV*viewScale).x;`,
       // FP: `FOut.${this.channel} = ${Object.keys(fields)
       //   .map((k) => `${k}(UV*viewScale).x`)
@@ -61,10 +66,10 @@ class Physarum {
       FP: `${Object.keys(fields)
         .map(
           (k, i) =>
-            `FOut.${
-              channels[i % channels.length]
-            } += smoothstep(0.,1.,${k}(UV*viewScale).x)`
-          // `FOut.${channels[i % channels.length]} = ${k}(UV*viewScale).x`
+            // `FOut.${
+            //   channels[i % channels.length]
+            // } += smoothstep(0.,1.,${k}(UV*viewScale).x)`
+            `FOut += min(mix(vec4(0.),color${i},${k}(UV*viewScale).x),1.)`
         )
         .join(";")}`,
     });
@@ -89,6 +94,7 @@ class Physarum {
     );
     fields["field" + this.index] = this.field[0];
     fieldFactors["field" + this.index] = this.U.fieldFactor;
+    colors["color" + this.index] = this.U.displayColor;
     // Update the particles based on the field and the parameters
     this.points = glsl(
       {
