@@ -62,8 +62,10 @@ export class Automata {
     particleCount = 1024,
     particleSize = 1,
     shareField = true,
-    renderParticles = "step(length(XY),.5)",
-    renderField = "field(UV).x",
+    renderParticles = "mix(vec4(0.), renderParticlesColor, smoothstep(1.0, 0.0, length(XY)))",
+    renderParticlesColor = [1, 1, 1, 1],
+    renderField = "mix(vec4(0.), renderFieldColor, length(field(UV))/2.)",
+    renderFieldColor = [1, 1, 1, 1],
     writeField = "smoothstep(1.0, 0.0, length(XY))",
     writeFieldBlend = BLEND_MODES.ADD,
     renderFieldBlend = BLEND_MODES.ADD,
@@ -92,7 +94,13 @@ export class Automata {
 
     const param = (name, value, target = this) => {
       target[name] = value;
-      if (debug) this.gui.add(target, name, -1 * value, 4 * value);
+      if (debug) {
+        if (typeof value === "number")
+          this.gui.add(target, name, -1 * value, 4 * value);
+        else if (Array.isArray(value)) {
+          this.gui.addColor(target, name);
+        }
+      }
     };
     if (debug) {
       this.gui = gui.addFolder(this.name);
@@ -106,6 +114,8 @@ export class Automata {
     param("updateFieldDecay", updateFieldDecay);
     param("updateFieldBlur", updateFieldBlur);
     param("updateFieldSteps", updateFieldSteps);
+    param("renderParticlesColor", renderParticlesColor);
+    param("renderFieldColor", renderFieldColor);
     Object.entries(this.uniforms).forEach(([key, value]) =>
       param(key, value, this.uniforms)
     );
@@ -144,11 +154,13 @@ export class Automata {
   }
   render(glsl) {
     glsl({
+      renderFieldColor: this.renderFieldColor,
       Blend: this.renderFieldBlend,
       field: this.field[0],
       FP: this.renderField,
     });
     glsl({
+      renderParticlesColor: this.renderParticlesColor,
       Blend: this.renderParticlesBlend,
       particles: this.particles[0],
       Grid: this.particles[0].size,
@@ -229,7 +241,6 @@ export class Physarum extends Automata {
     super({
       particleCount: 10000,
       particleSize: 1,
-      renderField: "field(UV).x",
       updateParticles: `
   vec2 dir = vec2(cos(FOut.z), sin(FOut.z));
   mat2 R = rot2(radians(senseAng));
