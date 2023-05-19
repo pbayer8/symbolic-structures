@@ -126,12 +126,6 @@ const physarum = new Physarum();
 function frame(t) {
   requestAnimationFrame(frame);
 
-  physarum
-    .frame
-    // glsl,
-    // this.withCamera, {
-    // time:t/1000.0, xrMode: false,
-    // ...this.viewParams,}
-    ();
+  physarum.frame();
 }
-// requestAnimationFrame(frame);
+requestAnimationFrame(frame);
