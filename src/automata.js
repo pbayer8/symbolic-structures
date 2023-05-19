@@ -4,7 +4,6 @@ import "./style.css";
 
 // TODO: field, bg and particle color convenience uniforms
 // TODO: collision detection using field.w > threshold optional convention
-// TODO: one shared field option instead of uniforms of all fields?
 
 const gui = new GUI();
 gui.hide();
@@ -21,6 +20,21 @@ function frame(t) {
   time = t / 1000;
   requestAnimationFrame(frame);
   instances.forEach((i) => i.frame());
+  const sharedFieldInstances = Object.fromEntries(
+    instances
+      .filter((i) => i.shareField)
+      .map((i) => [`field_${i.name}`, i.field[0]])
+  );
+  sharedField = glsl(
+    {
+      Clear: [0, 0, 0, 0],
+      ...sharedFieldInstances,
+      FP: Object.keys(sharedFieldInstances)
+        .map((k) => `${k}(UV)`)
+        .join("+"),
+    },
+    { format: "rgba32f", tag: "field" }
+  );
 }
 requestAnimationFrame(frame);
 const mouse = [0.5, 0.5];
@@ -30,7 +44,7 @@ document.addEventListener("mousemove", (e) => {
   mouse[1] = 1 - e.clientY / window.innerHeight;
   mouseButton = e.buttons ? 1 : 0;
 });
-const BLEND_MODES = {
+export const BLEND_MODES = {
   ADD: "s+d",
   SUBTRACT: "d-s",
   TRANSPARENT: "d*(1-sa)+s*sa",
@@ -38,13 +52,16 @@ const BLEND_MODES = {
   MAX: "max(s,d)",
   MIN: "min(s,d)",
   MULTIPLY: "d*s",
+  REPLACE: "s",
 };
+let sharedField;
 export class Automata {
   constructor({
     name = "",
     debug = false,
     particleCount = 1024,
     particleSize = 1,
+    shareField = true,
     renderParticles = "step(length(XY),.5)",
     renderField = "field(UV).x",
     writeField = "smoothstep(1.0, 0.0, length(XY))",
@@ -103,6 +120,7 @@ export class Automata {
     this.renderFieldBlend = renderFieldBlend;
     this.writeFieldBlend = writeFieldBlend;
     this.updateField = updateField;
+    this.shareField = shareField;
     this.seed = Math.floor(Math.random() * 1000);
     this.standardParticlesVP =
       "VOut.xy = 2.0 * (particles(ID.xy).xy+XY*particleSize)/vec2(ViewSize) - 1.0;";
@@ -150,7 +168,11 @@ export class Automata {
           updateFieldBlur: this.updateFieldBlur,
           FP: this.updateField,
         },
-        { story: 2, format: "rgba32f", tag: `field_${this.index}` }
+        {
+          story: 2,
+          format: "rgba32f",
+          tag: `field_${this.name}`,
+        }
       );
     this.particles = glsl(
       {
@@ -160,7 +182,7 @@ export class Automata {
         time,
         timeDelta,
         seed: this.seed,
-        field: this.field[0],
+        field: this.shareField && sharedField ? sharedField : this.field[0],
         ...Object.fromEntries(
           instances
             .filter((i) => i.field)
@@ -179,7 +201,7 @@ export class Automata {
         size: Array(2).fill(Math.ceil(Math.sqrt(this.particleCount))),
         story: 2,
         format: "rgba32f",
-        tag: `particles_${this.index}`,
+        tag: `particles_${this.name}`,
       }
     );
     glsl(
@@ -210,17 +232,11 @@ export class Physarum extends Automata {
       renderField: "field(UV).x",
       updateParticles: `
   vec2 dir = vec2(cos(FOut.z), sin(FOut.z));
-  // Rotate the sensor angle and create a rotation matrix
   mat2 R = rot2(radians(senseAng));
-  // Calculate the sensor positions
   vec2 sense = senseDist*dir;
-  // Macro to sample the field at the given position
   #define F(p) field((FOut.xy+(p))/worldSize).x
-  // Sample the field at the sensor positions
   float c=F(sense), r=F(R*sense), l=F(sense*R);
-  // Calculate the rotation angle in radians
   float rotAng = radians(moveAng);
-  // Update the particle direction based on the sensor readings
   if (l>c && c>r) {
       FOut.z -= rotAng;
   } else if (r>c && c>l) {
@@ -228,7 +244,6 @@ export class Physarum extends Automata {
   } else if (c<=r && c<=l) {
       FOut.z += sign(hash(ivec3(FOut.xyz*5039.)).x-0.5)*rotAng;
   }
-  // Update the particle position based on the direction and movement distance
   FOut.xy += dir*moveDist;`,
       uniforms: {
         senseDist: 18,
@@ -252,14 +267,14 @@ export class Worms extends Automata {
     vec2 pos = FOut.xy;
     vec2 pos2 = pos + dir * senseDist;
     vec4 field = field(pos2);
-    if (field.w > 0.1) {
+    if (field.x > 0.1) {
       FOut.z += PI * field.x * turnSpeed; 
     }
     FOut.xy += dir * moveDist;`,
       uniforms: {
         senseDist: 2,
         turnSpeed: 1,
-        moveDist: 0.1,
+        moveDist: 1,
         ...(params.uniforms || {}),
       },
       ...params,

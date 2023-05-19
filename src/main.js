@@ -1,16 +1,20 @@
-import { Automata, Physarum, Worms } from "./automata";
-
-new Automata({
-  particleCount: 10,
-  particleSize: 5,
-  writeField: "vec4(1.0, 0.0, 0.0, 1.0)",
-  renderField: "field(UV)",
-});
+import { Automata, BLEND_MODES, Physarum, Worms } from "./automata";
 
 new Worms({
   debug: true,
-  renderParticles:
-    "vec4(smoothstep(1.0, 0.5, length(XY)), smoothstep(.5, 0., length(XY)), 0.0, smoothstep(1.0, 0.0, length(XY)))",
+  renderParticles: "0.",
+  renderField: "field(UV).x*.1,0.,0.,1.",
 });
 
-new Physarum({});
+new Physarum({
+  debug: true,
+  renderField: "0.,field(UV).x,0.,1.",
+  renderParticles: "0.",
+});
+new Automata({
+  particleCount: 10,
+  particleSize: 5,
+  writeField: "vec4(1.0, 1.0, 0.0, 1.0)",
+  renderField: "field(UV)",
+  renderFieldBlend: BLEND_MODES.PREMULTIPLIED,
+});
