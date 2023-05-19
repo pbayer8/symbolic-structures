@@ -9,7 +9,7 @@ const N = 10;
 const BLOCK_SIZE = 64;
 
 const SPRITES = Array(2)
-  .fill()
+  .fill(0)
   .map(() =>
     regl.framebuffer({
       radius: N,
@@ -108,7 +108,7 @@ const drawSprites = regl({
 
   attributes: {
     sprite: Array(N * N)
-      .fill()
+      .fill(0)
       .map(function (_, i) {
         const x = i % N;
         const y = (i / N) | 0;

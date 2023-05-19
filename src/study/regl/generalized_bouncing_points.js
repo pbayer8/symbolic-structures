@@ -17,13 +17,6 @@ const pingPongPoints = ({
   drawFrag,
   drawVert,
   uniformsDraw,
-}: {
-  numPoints: number;
-  updateFrag: string;
-  uniformsUpdate: object;
-  drawFrag: string;
-  drawVert: string;
-  uniformsDraw: object;
 }) => {
   const radius = Math.ceil(Math.sqrt(numPoints));
   const buffers = Array(2)
@@ -50,9 +43,9 @@ const pingPongPoints = ({
       }`,
     frag: updateFrag,
     depth: { enable: false },
-    framebuffer: ({ tick }: any) => buffers[(tick + 1) % 2],
+    framebuffer: ({ tick }) => buffers[(tick + 1) % 2],
     uniforms: {
-      u_state: ({ tick }: any) => buffers[tick % 2],
+      u_state: ({ tick }) => buffers[tick % 2],
       u_tick: ({ tick }) => tick,
       u_time: ({ time }) => time,
       u_resolution: ({ viewportWidth, viewportHeight }) => [

@@ -32,7 +32,7 @@ document.addEventListener("mousemove", (e) => {
   mouse[1] = e.buttons ? 1 - e.clientY / window.innerHeight : -100;
 });
 
-class Physarum {
+class Physarum2 {
   static Tags = ["2d", "simulation"];
 
   // Constructor for the Physarum class, setting up initial parameters
@@ -48,7 +48,7 @@ class Physarum {
       gui.add(U, s, ...arg);
     };
     par("density", 1, 1, 3, 1); // Particle density
-    par("senseAng", 5.5, -180, 180); // Sensor angle
+    // par("senseAng", 5.5, -180, 180); // Sensor angle
     par("senseDist", 18, 1, 50); // Sensor distance
     par("moveAng", 45, 0, 180); // Rotation angle
     par("moveDist", 0, -2, 2); // Movement distance
@@ -99,8 +99,6 @@ class Physarum {
       #define S(x,y) (Src(vec2(x,y)))
       // Apply a 3x3 mean filter and decay factor to the field
       FOut = 0.95*(S(x,y)+S(l,y)+S(r,y)+S(x,u)+S(x,d)+S(l,u)+S(r,u)+S(l,d)+S(r,d))/9.0;
-      // Apply a rect sigmoid function to the field
-      FOut *= smoothstep(outerEdge,innerEdge,length(XY*XY*XY*XY));
       `,
       },
       { story: 2, format: "rgba8", tag: "field" + this.index }
@@ -126,27 +124,23 @@ class Physarum {
       }
       // Calculate the current direction of the particle
       vec2 dir = vec2(cos(FOut.z), sin(FOut.z));
-      // Rotate the sensor angle and create a rotation matrix
-      mat2 R = rot2(radians(senseAng));
-      // Calculate the sensor positions
-      vec2 sense = senseDist*dir;
-      // Macro to sample the field at the given position
-      // #define F(p) field((FOut.xy+(p))/wldSize).x
-      #define F(p) ${Object.keys(fields)
-        .map((k, i) => `${k}((FOut.xy+(p))/wldSize).x*fieldFactor${i}`)
-        .join("+")}+50.*smoothstep(.2,0.,length((FOut.xy+p)/wldSize-mouse))
-      // Sample the field at the sensor positions
-      float c=F(sense), r=F(R*sense), l=F(sense*R);
-      // Calculate the rotation angle in radians
-      float rotAng = radians(moveAng);
-      // Update the particle direction based on the sensor readings
-      if (l>c && c>r) {
-          FOut.z -= rotAng;
-      } else if (r>c && c>l) {
-         FOut.z += rotAng;
-      } else if (c<=r && c<=l) {
-         FOut.z += sign(hash(ivec3(FOut.xyz*5039.)).x-0.5)*rotAng;
-      }
+      // sample the field north, east, south and west of the particle
+      vec4 field = vec4(
+          field(FOut.xy+vec2(0.0, senseDist)).x,
+          field(FOut.xy+vec2(senseDist, 0.0)).x,
+          field(FOut.xy+vec2(0.0, -senseDist)).x,
+          field(FOut.xy+vec2(-senseDist, 0.0)).x
+      );
+      // Calculate the angle of the field gradient
+      float ang = atan(field.y-field.z, field.w-field.x);
+      // Calculate the angle difference between the particle direction and the field gradient
+      float diff = ang - FOut.z;
+      // Wrap the angle difference to stay within -PI and PI
+      diff = mod(diff+PI, TAU)-PI;
+      // Calculate the new particle direction based on the angle difference and the rotation angle
+      FOut.z += clamp(diff, -moveAng, moveAng);
+      // Calculate the distance to move based on the field strength and the movement distance
+      float moveDist = field.x*moveDist;
       // Update the particle position based on the direction and movement distance
       FOut.xy += dir*moveDist;
       // Wrap the particle position to stay within the world size
@@ -181,9 +175,9 @@ class Physarum {
   }
 }
 
-const physarums = Array(Math.ceil(Math.random() * 6))
+const physarums = Array(1)
   .fill("")
-  .map((_, i) => new Physarum());
+  .map((_, i) => new Physarum2());
 
 function frame(t) {
   requestAnimationFrame(frame);
