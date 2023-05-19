@@ -5,63 +5,103 @@ canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 document.body.appendChild(canvas);
 const glsl = SwissGL(canvas);
+let count = 0; // TODO
+const BLEND_MODES = {
+  ADD: "s+d",
+  SUBTRACT: "d-s",
+  TRANSPARENT: "d*(1-sa)+s*sa",
+  PREMULTIPLIED: "d*(1-sa)+s",
+  MAX: "max(s,d)",
+  MIN: "min(s,d)",
+  MULTIPLY: "d*s",
+};
 class Automata {
-  constructor() {}
+  constructor({
+    pointCount = 1024,
+    pointSize = 1,
+    renderPoint = "vec4(smoothstep(1.0, 0.0, length(XY)))",
+    renderField = "field(UV).x",
+    writeField = "smoothstep(1.0, 0.0, length(XY))",
+    writeFieldBlend = BLEND_MODES.ADD,
+    renderFieldBlend = BLEND_MODES.ADD,
+    renderPointBlend = BLEND_MODES.PREMULTIPLIED,
+    updateFieldDecay = 0.95,
+    updateFieldBlur = 1,
+    updateFieldSteps = 1, // TODO: this isn't working quite right
+    updateField = `vec2 dp = Src_step()*updateFieldBlur;
+    float x=UV.x, y=UV.y;
+    float l=x-dp.x, r=x+dp.x, u=y-dp.y, d=y+dp.y;
+    #define S(x,y) (Src(vec2(x,y)))
+    // Apply a 3x3 mean filter and decay factor to the field
+    FOut = updateFieldDecay*(S(x,y)+S(l,y)+S(r,y)+S(x,u)+S(x,d)+S(l,u)+S(r,u)+S(l,d)+S(r,d))/9.0;`,
+    // initialParticles = "FOut = vec4(UV*worldSize,0.,1.);",
+    initialParticles = `FOut = vec4(hash(ivec3(I, seed)), 1.0);FOut.xyz *= vec3(worldSize, TAU);`,
+    numSteps = 1,
+    wrapParticles = true,
+  } = {}) {
+    this.index = count;
+    this.sqrtPointCount = Math.ceil(Math.sqrt(pointCount));
+    this.pointSize = pointSize;
+    this.renderPoint = renderPoint;
+    this.renderField = renderField;
+    this.writeField = writeField;
+    this.numSteps = numSteps;
+    this.wrapParticles = wrapParticles;
+    this.initialParticles = initialParticles;
+    this.updateFieldDecay = Math.pow(updateFieldDecay, 1 / updateFieldSteps);
+    this.updateFieldBlur = updateFieldBlur;
+    this.updateFieldSteps = updateFieldSteps;
+    this.renderPointBlend = renderPointBlend;
+    this.renderFieldBlend = renderFieldBlend;
+    this.writeFieldBlend = writeFieldBlend;
+    this.updateField = updateField;
+    this.seed = Math.floor(Math.random() * 1000);
+    this.standardPointVP =
+      "VOut.xy = 2.0 * (points(ID.xy).xy+XY*pointSize)/vec2(ViewSize) - 1.0;";
+    count++;
+  }
   frame() {
-    this.step(glsl);
-    // Update the output using the field and the parameters
+    for (let i = 0; i < this.numSteps; i++) this.step(glsl);
+    this.render(glsl);
+  }
+  render(glsl) {
     glsl({
-      Blend: "s+d",
+      Blend: this.renderFieldBlend,
       field: this.field[0],
-      // FP: `field(UV).x`,
-      // mix between red and blue based on field value range -1 to 1
-      FP: `vec4(mix(vec3(1.,0.,0.),vec3(0.,0.,1.),field(UV).x*0.5+0.5),1.)`,
+      FP: this.renderField,
     });
     glsl({
+      Blend: this.renderPointBlend,
       points: this.points[0],
       Grid: this.points[0].size,
-      // Blend: "s+d",
-      VP: `
-      float pointSize = 1.;
-      // Calculate the vertex position in clip space
-      VOut.xy = 2.0 * (points(ID.xy).xy+XY*pointSize)/vec2(ViewSize) - 1.0;`,
-      FP: `
-      // Calculate the fragment color based on the distance to the particle center
-      // smoothstep(1.0, 0.0, length(XY))
-      vec4(0.,1.,0.,1.)`,
+      pointSize: this.pointSize,
+      VP: this.standardPointVP,
+      FP: this.renderPoint,
     });
   }
   step(glsl) {
     // Update the field based on the source step and the surrounding cells
-    this.field = glsl(
-      {
-        FP: `
-      vec2 dp = Src_step();
-      float x=UV.x, y=UV.y;
-      float l=x-dp.x, r=x+dp.x, u=y-dp.y, d=y+dp.y;
-      // Macro to sample the source at given coordinates
-      #define S(x,y) (Src(vec2(x,y)))
-      // Apply a 3x3 mean filter and decay factor to the field
-      FOut = .95*(S(x,y)+S(l,y)+S(r,y)+S(x,u)+S(x,d)+S(l,u)+S(r,u)+S(l,d)+S(r,d))/9.0;
-      `,
-      },
-      { story: 2, format: "rgba32f", tag: "field" }
-    );
+    for (let i = 0; i < this.updateFieldSteps; i++)
+      this.field = glsl(
+        {
+          updateFieldDecay: this.updateFieldDecay,
+          updateFieldBlur: this.updateFieldBlur,
+          FP: this.updateField,
+        },
+        { story: 2, format: "rgba32f", tag: `field_${this.index}` }
+      );
 
     // Update the particles based on the field and the parameters
     this.points = glsl(
       {
         field: this.field[0],
-        FP: `
-      FOut = Src(I);
+        seed: this.seed,
+        FP: `FOut = Src(I);
       vec2 worldSize = vec2(field_size());
-      // Initialize new particles with random positions and directions
       if (FOut.w == 0.0 || FOut.x>=worldSize.x || FOut.y>=worldSize.y) {
-          FOut = vec4(hash(ivec3(I, 123)), 1.0);
-          FOut.xyz *= vec3(worldSize, TAU); 
-          return;
+        ${this.initialParticles}
+        return;
       }
-      // Calculate the current direction of the particle
       vec2 dir = vec2(cos(FOut.z), sin(FOut.z));
 
       // Sensing here:
@@ -69,15 +109,13 @@ class Automata {
       // Update the particle position based on the direction and movement distance
       FOut.xy += dir * .1;
 
-      // Wrap the particle position to stay within the world size
-      FOut.xy = mod(FOut.xy, worldSize);
-      `,
+      ${this.wrapParticles ? "FOut.xy = mod(FOut.xy, worldSize);" : ""}`,
       },
       {
-        size: [20, 20],
+        size: [this.sqrtPointCount, this.sqrtPointCount],
         story: 2,
         format: "rgba32f",
-        tag: "points",
+        tag: `points_${this.index}`,
       }
     );
 
@@ -86,27 +124,32 @@ class Automata {
       {
         points: this.points[0],
         Grid: this.points[0].size,
-        Blend: "s+d",
-        VP: `
-        float pointSize = 10.;
-        // Calculate the vertex position in clip space
-        VOut.xy = 2.0 * (points(ID.xy).xy+XY*pointSize)/vec2(ViewSize) - 1.0;`,
-        FP: `
-      // Calculate the fragment color based on the distance to the particle center
-      // smoothstep(1.0, 0.0, length(XY))
-      XY.x`,
+        pointSize: this.pointSize,
+        Blend: this.writeFieldBlend,
+        VP: this.standardPointVP,
+        FP: this.writeField,
       },
       this.field[0]
     );
   }
 }
 
-const physarums = Array(1)
-  .fill("")
-  .map((_, i) => new Automata());
+const a1 = new Automata({
+  pointCount: 10,
+  pointSize: 5,
+  writeField: "vec4(1.0, 0.0, 0.0, 1.0)",
+  renderField: "field(UV)",
+});
+const a2 = new Automata({
+  pointCount: 10,
+  pointSize: 15,
+  writeField: "vec4(0.0, 1.0, 0.0, 1.0)",
+  renderField: "field(UV)",
+});
 
 function frame(t) {
   requestAnimationFrame(frame);
-  physarums.forEach((p) => p.frame());
+  a1.frame();
+  a2.frame();
 }
 requestAnimationFrame(frame);

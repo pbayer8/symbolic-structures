@@ -79,7 +79,8 @@ class Physarum {
       // Rotate the sensor angle and create a rotation matrix
       mat2 R = rot2(radians(senseAng));
       // Calculate the sensor positions
-      vec2 sense = senseDist*dir;// Macro to sample the field at the given position
+      vec2 sense = senseDist*dir;
+      // Macro to sample the field at the given position
       #define F(p) field((FOut.xy+(p))/wldSize).x
       // Sample the field at the sensor positions
       float c=F(sense), r=F(R*sense), l=F(sense*R);
