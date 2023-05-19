@@ -4,7 +4,7 @@ import "./style.css";
 
 // TODO: field, bg and particle color convenience uniforms
 // TODO: collision detection using field.w > threshold optional convention
-
+let sharedField;
 const gui = new GUI();
 gui.hide();
 const canvas = document.createElement("canvas");
@@ -15,10 +15,17 @@ const glsl = SwissGL(canvas);
 let instances = [];
 let time = 0;
 let timeDelta = 0;
+let _renderSharedField = "0.";
+export const renderSharedField = (v) => (_renderSharedField = v);
 function frame(t) {
   timeDelta = t / 1000 - time;
   time = t / 1000;
   requestAnimationFrame(frame);
+  if (sharedField)
+    glsl({
+      field: sharedField,
+      FP: _renderSharedField,
+    });
   instances.forEach((i) => i.frame());
   const sharedFieldInstances = Object.fromEntries(
     instances
@@ -32,6 +39,7 @@ function frame(t) {
       FP: Object.keys(sharedFieldInstances)
         .map((k) => `${k}(UV)`)
         .join("+"),
+      Blend: BLEND_MODES.REPLACE,
     },
     { format: "rgba32f", tag: "field" }
   );
@@ -54,7 +62,7 @@ export const BLEND_MODES = {
   MULTIPLY: "d*s",
   REPLACE: "s",
 };
-let sharedField;
+
 export class Automata {
   constructor({
     name = "",
@@ -245,7 +253,7 @@ export class Physarum extends Automata {
   vec2 dir = vec2(cos(FOut.z), sin(FOut.z));
   mat2 R = rot2(radians(senseAng));
   vec2 sense = senseDist*dir;
-  #define F(p) field((FOut.xy+(p))/worldSize).x
+  #define F(p) field((FOut.xy+(p))/worldSize)[int(senseChannel)]
   float c=F(sense), r=F(R*sense), l=F(sense*R);
   float rotAng = radians(moveAng);
   if (l>c && c>r) {
@@ -253,17 +261,18 @@ export class Physarum extends Automata {
   } else if (r>c && c>l) {
       FOut.z += rotAng;
   } else if (c<=r && c<=l) {
-      FOut.z += sign(hash(ivec3(FOut.xyz*5039.)).x-0.5)*rotAng;
+      FOut.z += sign(hash(ivec3(FOut.xyz*seed)).x-0.5)*rotAng;
   }
   FOut.xy += dir*moveDist;`,
+      ...params,
       uniforms: {
         senseDist: 18,
         senseAng: 6,
+        senseChannel: 0,
         moveAng: 45,
-        moveDist: 2,
+        moveDist: 1,
         ...(params.uniforms || {}),
       },
-      ...params,
     });
   }
 }
