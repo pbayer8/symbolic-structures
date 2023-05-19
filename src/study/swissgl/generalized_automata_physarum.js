@@ -136,21 +136,35 @@ class Automata {
 }
 
 new Automata({
-  pointCount: 10,
-  pointSize: 5,
-  writeField: "vec4(1.0, 0.0, 0.0, 1.0)",
-  renderField: "field(UV)",
-});
-new Automata({
-  pointCount: 1000,
+  pointCount: 10000,
   pointSize: 1,
-  writeField: "vec4(0.0, 1.0, 0.0, 1.0)",
-  renderField: "field(UV)",
-});
-
-new Automata({
-  pointCount: 100,
-  pointSize: 15,
-  writeField: "vec4(0.0, 0., 1.0, 1.0)",
-  renderField: "field(UV)",
+  renderField: "field(UV).x",
+  updateParticles: `
+  vec2 dir = vec2(cos(FOut.z), sin(FOut.z));
+  // Rotate the sensor angle and create a rotation matrix
+  mat2 R = rot2(radians(senseAng));
+  // Calculate the sensor positions
+  vec2 sense = senseDist*dir;
+  // Macro to sample the field at the given position
+  #define F(p) field((FOut.xy+(p))/worldSize).x
+  // Sample the field at the sensor positions
+  float c=F(sense), r=F(R*sense), l=F(sense*R);
+  // Calculate the rotation angle in radians
+  float rotAng = radians(moveAng);
+  // Update the particle direction based on the sensor readings
+  if (l>c && c>r) {
+      FOut.z -= rotAng;
+  } else if (r>c && c>l) {
+      FOut.z += rotAng;
+  } else if (c<=r && c<=l) {
+      FOut.z += sign(hash(ivec3(FOut.xyz*5039.)).x-0.5)*rotAng;
+  }
+  // Update the particle position based on the direction and movement distance
+  FOut.xy += dir*moveDist;`,
+  updateParticlesUniforms: {
+    senseDist: 18,
+    senseAng: 6,
+    moveAng: 45,
+    moveDist: 2,
+  },
 });

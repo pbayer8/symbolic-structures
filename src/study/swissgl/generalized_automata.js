@@ -44,6 +44,7 @@ class Automata {
     initialParticles = `FOut = vec4(hash(ivec3(I, seed)), 1.0);FOut.xyz *= vec3(worldSize, TAU);`,
     updateParticles = `vec2 dir = vec2(cos(FOut.z), sin(FOut.z));
     FOut.xy += dir * .1;`,
+    updateParticlesUniforms = {},
     numSteps = 1,
     wrapParticles = true,
   } = {}) {
@@ -57,6 +58,7 @@ class Automata {
     this.wrapParticles = wrapParticles;
     this.initialParticles = initialParticles;
     this.updateParticles = updateParticles;
+    this.updateParticlesUniforms = updateParticlesUniforms;
     this.updateFieldDecay = Math.pow(updateFieldDecay, 1 / updateFieldSteps);
     this.updateFieldBlur = updateFieldBlur;
     this.updateFieldSteps = updateFieldSteps;
@@ -100,6 +102,7 @@ class Automata {
       );
     this.points = glsl(
       {
+        ...this.updateParticlesUniforms,
         field: this.field[0],
         seed: this.seed,
         FP: `FOut = Src(I);
