@@ -5,7 +5,13 @@ canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 document.body.appendChild(canvas);
 const glsl = SwissGL(canvas);
-let count = 0;
+let instances = [];
+function frame(t) {
+  requestAnimationFrame(frame);
+  instances.forEach((i) => i.frame());
+}
+requestAnimationFrame(frame);
+
 const BLEND_MODES = {
   ADD: "s+d",
   SUBTRACT: "d-s",
@@ -19,7 +25,7 @@ class Automata {
   constructor({
     pointCount = 1024,
     pointSize = 1,
-    renderPoint = "vec4(smoothstep(1.0, 0.0, length(XY)))",
+    renderPoint = "step(length(XY),.5)",
     renderField = "field(UV).x",
     writeField = "smoothstep(1.0, 0.0, length(XY))",
     writeFieldBlend = BLEND_MODES.ADD,
@@ -41,7 +47,7 @@ class Automata {
     numSteps = 1,
     wrapParticles = true,
   } = {}) {
-    this.index = count;
+    this.index = instances.length;
     this.sqrtPointCount = Math.ceil(Math.sqrt(pointCount));
     this.pointSize = pointSize;
     this.renderPoint = renderPoint;
@@ -61,7 +67,7 @@ class Automata {
     this.seed = Math.floor(Math.random() * 1000);
     this.standardPointVP =
       "VOut.xy = 2.0 * (points(ID.xy).xy+XY*pointSize)/vec2(ViewSize) - 1.0;";
-    count++;
+    instances.push(this);
   }
   frame() {
     for (let i = 0; i < this.numSteps; i++) this.step(glsl);
@@ -126,22 +132,22 @@ class Automata {
   }
 }
 
-const a1 = new Automata({
+new Automata({
   pointCount: 10,
   pointSize: 5,
   writeField: "vec4(1.0, 0.0, 0.0, 1.0)",
   renderField: "field(UV)",
 });
-const a2 = new Automata({
-  pointCount: 10,
-  pointSize: 15,
+new Automata({
+  pointCount: 1000,
+  pointSize: 1,
   writeField: "vec4(0.0, 1.0, 0.0, 1.0)",
   renderField: "field(UV)",
 });
 
-function frame(t) {
-  requestAnimationFrame(frame);
-  a1.frame();
-  a2.frame();
-}
-requestAnimationFrame(frame);
+new Automata({
+  pointCount: 100,
+  pointSize: 15,
+  writeField: "vec4(0.0, 0., 1.0, 1.0)",
+  renderField: "field(UV)",
+});
