@@ -1,19 +1,12 @@
 import REGL from "regl";
+import { mouse } from "../mouse";
 import "../style.css";
 
 const regl = REGL();
-let mouse = [0, 0];
 let time = Math.random() * 100;
 let speed = Math.random() * 0.0002;
 let slowSpot = Math.random() - 0.5;
 let clear = false;
-window.addEventListener("mousemove", (e) => {
-  mouse[0] = (2 * e.clientX) / window.innerWidth - 1;
-  mouse[1] = 1 - (2 * e.clientY) / window.innerHeight;
-});
-window.addEventListener("mousedown", (e) => {
-  clear = true;
-});
 
 const NUM_POINTS = 1e4;
 const VERT_SIZE = 4;
@@ -31,7 +24,7 @@ const drawParticles = regl({
   precision mediump float;
   attribute float index;
   uniform float time;
-  uniform vec2 mouse;
+  uniform vec3 mouse;
   varying vec3 fragColor;
   void main() {
     float i = index * 10.;
@@ -42,7 +35,7 @@ const drawParticles = regl({
     vec3 position = .8 * vec3(cos(i * sin(i * timee) * timee), sin(i * cos(i) * timee), 0);
     float sinIndex = sin(index*3.14);
     gl_PointSize = 6.*index*index*index*index+2.;
-    vec2 mousePos = mouse;
+    vec2 mousePos = mouse.xy;
     if (canvasAspectRatio > 1.) {
       mousePos.x = mousePos.x * canvasAspectRatio;
     } else {
@@ -97,7 +90,7 @@ const drawParticles = regl({
   depth: { enable: false },
   uniforms: {
     time: () => time,
-    mouse: () => mouse,
+    mouse: () => [mouse[0] * 2 - 1, mouse[1] * 2 - 1, mouse[3]],
   },
 
   count: NUM_POINTS,
@@ -111,14 +104,13 @@ regl.frame(() => {
     color: [236 / 255, 225 / 255, 208 / 255, 1],
   });
   drawParticles();
-  if (clear) {
+  if (mouse[2] === 1 && clear) {
     time = Math.random() * 10;
     speed = Math.random() * 0.0003;
     slowSpot = Math.random() - 0.5;
-    // regl.clear({
-    //   color: [0, 0, 0, 1],
-    //   framebuffer: drawbuffer,
-    // });
     clear = false;
+  }
+  if (mouse[2] === 0) {
+    clear = true;
   }
 });

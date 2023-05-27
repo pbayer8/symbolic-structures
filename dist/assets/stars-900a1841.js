@@ -1,8 +1,8 @@
-import"./style-56beddc0.js";import{R as m}from"./regl-a5845c54.js";const e=m();let o=[0,0],t=Math.random()*100,a=Math.random()*2e-4,r=Math.random()-.5,n=!1;window.addEventListener("mousemove",i=>{o[0]=2*i.clientX/window.innerWidth-1,o[1]=1-2*i.clientY/window.innerHeight});window.addEventListener("mousedown",i=>{n=!0});const s=1e4,c=4,d=e.buffer(Array(s).fill(0).map((i,l)=>[l/s])),f=e({vert:`
+import{m as i}from"./mouse-c7876df6.js";import{R as l}from"./regl-a5845c54.js";const o=l();let t=Math.random()*100,s=Math.random()*2e-4,n=Math.random()-.5,e=!1;const a=1e4,m=4,c=o.buffer(Array(a).fill(0).map((d,r)=>[r/a])),f=o({vert:`
   precision mediump float;
   attribute float index;
   uniform float time;
-  uniform vec2 mouse;
+  uniform vec3 mouse;
   varying vec3 fragColor;
   void main() {
     float i = index * 10.;
@@ -13,7 +13,7 @@ import"./style-56beddc0.js";import{R as m}from"./regl-a5845c54.js";const e=m();l
     vec3 position = .8 * vec3(cos(i * sin(i * timee) * timee), sin(i * cos(i) * timee), 0);
     float sinIndex = sin(index*3.14);
     gl_PointSize = 6.*index*index*index*index+2.;
-    vec2 mousePos = mouse;
+    vec2 mousePos = mouse.xy;
     if (canvasAspectRatio > 1.) {
       mousePos.x = mousePos.x * canvasAspectRatio;
     } else {
@@ -45,4 +45,4 @@ import"./style-56beddc0.js";import{R as m}from"./regl-a5845c54.js";const e=m();l
     float timee = sin(time/timeMult)*timeMult;
     float dist = 1.-length(gl_PointCoord.xy - 0.5);
     gl_FragColor = vec4(vec3(gl_PointCoord, 0.)*.5+fragColor, 1.);
-  }`,attributes:{index:{buffer:d,stride:c,offset:0}},blend:{enable:!0,func:{srcRGB:"src alpha",srcAlpha:"src alpha",dstRGB:"one minus src alpha",dstAlpha:"one minus src alpha"}},depth:{enable:!1},uniforms:{time:()=>t,mouse:()=>o},count:s,primitive:"points"});e.frame(()=>{t+=(o[0]-r)*a,e.clear({depth:1,color:[236/255,225/255,208/255,1]}),f(),n&&(t=Math.random()*10,a=Math.random()*3e-4,r=Math.random()-.5,n=!1)});
+  }`,attributes:{index:{buffer:c,stride:m,offset:0}},blend:{enable:!0,func:{srcRGB:"src alpha",srcAlpha:"src alpha",dstRGB:"one minus src alpha",dstAlpha:"one minus src alpha"}},depth:{enable:!1},uniforms:{time:()=>t,mouse:()=>[i[0]*2-1,i[1]*2-1,i[3]]},count:a,primitive:"points"});o.frame(()=>{t+=(i[0]-n)*s,o.clear({depth:1,color:[236/255,225/255,208/255,1]}),f(),i[2]===1&&e&&(t=Math.random()*10,s=Math.random()*3e-4,n=Math.random()-.5,e=!1),i[2]===0&&(e=!0)});

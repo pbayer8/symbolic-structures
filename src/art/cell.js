@@ -1,5 +1,8 @@
+import GUI from "lil-gui";
 import SwissGL from "swissgl";
+import { mouse } from "../mouse";
 import "../style.css";
+
 const canvas = document.createElement("canvas");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -11,9 +14,8 @@ const fieldFactors = {};
 const colors = {};
 const outerEdge = Math.random() * 0.5 + 0.5;
 const edge = { outerEdge, innerEdge: Math.random() * outerEdge };
-const mouse = [-100, -100];
+
 // Create a new Physarum instance
-import GUI from "lil-gui";
 const gui = new GUI();
 gui.close();
 gui.hide();
@@ -28,10 +30,6 @@ const clearColor = [
   Math.random() * colorStrength,
   1,
 ];
-document.addEventListener("mousemove", (e) => {
-  mouse[0] = e.buttons ? e.clientX / window.innerWidth : -100;
-  mouse[1] = e.buttons ? 1 - e.clientY / window.innerHeight : -100;
-});
 
 class Physarum {
   static Tags = ["2d", "simulation"];
@@ -129,7 +127,7 @@ class Physarum {
       mat2 R = rot2(radians(senseAng));
       // Calculate the sensor positions
       vec2 sense = senseDist*dir;
-      vec2 mousePos = mouse;
+      vec2 mousePos = mouse.z>0.?mouse.xy:vec2(-100.);
       vec2 aspectMult = aspectRatio > 1. ? vec2(aspectRatio, 1.) : vec2(1., 1./aspectRatio);
       // Macro to sample the field at the given position
       #define F(p) ${Object.keys(fields)
