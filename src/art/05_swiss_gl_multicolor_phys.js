@@ -1,9 +1,6 @@
 import SwissGL from "swissgl";
 import "./style.css";
 const canvas = document.createElement("canvas");
-const size = Math.min(window.innerWidth, window.innerHeight);
-// canvas.width = size;
-// canvas.height = size;
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 document.body.appendChild(canvas);
@@ -29,22 +26,15 @@ class Physarum {
     const U = (this.U = { viewScale: 1, step_n: 1 });
     // Function to add a parameter to the U object and the GUI
     const par = (s, v, ...arg) => {
-      // U[s] = v;
       U[s] = Math.random() * (arg[1] - arg[0]) + arg[0];
       gui.add(U, s, ...arg);
     };
-    // par("step_n", 1, 1, 1, 1); // Number of simulation steps
-    // par("step_n", 1, 0, 20, 1); // Number of simulation steps
     par("density", 1, 1, 3, 1); // Particle density
-    // par("density", 1, 1, 4, 1); // Particle density
     par("senseAng", 5.5, -180, 180); // Sensor angle
     par("senseDist", 18, 1, 50); // Sensor distance
     par("moveAng", 45, 0, 180); // Rotation angle
     par("moveDist", 0, -2, 2); // Movement distance
-    // par("moveDist", 2, 0, 4); // Movement distance
     par("fieldFactor", 0, -5, 5); // Movement distance
-    // par("moveDist", 2, 0, 10); // Movement distance
-    // par("viewScale", 1, 1, 1, 1); // View scale factor
     U["displayColor"] = [Math.random(), Math.random(), Math.random(), 1];
     gui.addColor(U, "displayColor");
   }
@@ -59,16 +49,9 @@ class Physarum {
       ...fields,
       ...this.U,
       ...colors,
-      // FP: `FOut.${this.channel} = field(UV*viewScale).x;`,
-      // FP: `FOut.${this.channel} = ${Object.keys(fields)
-      //   .map((k) => `${k}(UV*viewScale).x`)
-      //   .join("+")};`,
       FP: `${Object.keys(fields)
         .map(
           (k, i) =>
-            // `FOut.${
-            //   channels[i % channels.length]
-            // } += smoothstep(0.,1.,${k}(UV*viewScale).x)`
             `FOut += min(mix(vec4(0.),color${i},${k}(UV*viewScale).x),1.)`
         )
         .join(";")}`,
@@ -117,7 +100,6 @@ class Physarum {
       // Calculate the sensor positions
       vec2 sense = senseDist*dir;
       // Macro to sample the field at the given position
-      // #define F(p) field((FOut.xy+(p))/wldSize).x
       #define F(p) ${Object.keys(fields)
         .map((k) => `${k}((FOut.xy+(p))/wldSize).x*${fieldFactors[k]}`)
         .join("+")}
@@ -159,9 +141,7 @@ class Physarum {
       VOut.xy = 2.0 * (points(ID.xy).xy+XY*2.0)/vec2(ViewSize) - 1.0;`,
         FP: `
       // Calculate the fragment color based on the distance to the particle center
-      // smoothstep(fieldFactor, 0.0, length(XY))
       smoothstep(1.0, 0.0, length(XY)*2.)
-      // 2.-2.*length(XY)
       `,
       },
       this.field[0]

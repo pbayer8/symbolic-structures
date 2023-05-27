@@ -9,7 +9,6 @@ document.addEventListener("mousemove", (e) => {
 });
 
 const quadPoints = [-1, -1, 1, -1, -1, 1, 1, -1, -1, 1, 1, 1];
-// const quadPoints = [-1, -1, 3, -1, -1, 3];
 
 const basicVert = `precision mediump float;
 attribute vec2 position;
@@ -181,8 +180,6 @@ const { update, draw, buffers } = pingPongShader({
       texture2D(u_state, uv + vec2(0.0, -1.0) / u_resolution);
     blurred /= 4.0;
     blurred *= 0.9;
-    float dist = distance(gl_FragCoord.xy, u_mouse);
-    blurred.x += step(dist, 10.0);
     gl_FragColor = vec4(blurred.xyz, 1.0);
   }
   `,
@@ -194,8 +191,7 @@ const { update, draw, buffers } = pingPongShader({
     vec2 uv = gl_FragCoord.xy / u_resolution;
     vec4 prevState = texture2D(u_state, uv);
     float dist = length(gl_FragCoord.xy - u_resolution.xy / 2.0);
-    // prevState.x += step(dist, 10.0);
-    gl_FragColor = vec4(prevState.xyz, 1.0);
+    gl_FragColor = vec4(prevState.xzy, 1.0);
   }
   `,
 });
@@ -221,23 +217,14 @@ const { update: updateSprites, draw: drawSprites } = pingPongPoints({
     float W = texture2D(u_substrate, pos_uv + vec2(-1.,0.)*dist).x;
     vec2 vdiff = vec2(E - W, N - S);
     velocity += vdiff*.5;
-
-    // // particles near mouse attract to it
-    // vec2 mouse = u_mouse/u_resolution;
-    // // vec2 diff = mouse - position;
-    // // float mouse_dist = length(diff);
-    // // float force = 1.0 / (mouse_dist * mouse_dist);
-    // // velocity += normalize(diff) * force;
-    // position = mix(position, mouse, .1);
     
+    // as position gets farther from the center, velocity pulls it back
+    velocity -= position*.04;
+
     velocity = normalize(velocity);
 
     position += velocity*.0005;
-    // wrap around
-    if (position.x > 1.0) position.x -= 2.0;
-    else if (position.x < -1.) position.x += 2.0;
-    if (position.y > 1.0) position.y -= 2.0;
-    else if (position.y < -1.) position.y += 2.0;
+    position = mod(position + 1.0, 2.0) - 1.0;
     gl_FragColor = vec4(position, velocity);
   }
   `,
@@ -258,7 +245,6 @@ const { update: updateSprites, draw: drawSprites } = pingPongPoints({
   varying vec4 v_data;
   void main () {
     if (length(gl_PointCoord.xy - vec2(.5)) > .5) discard;
-    // vec4 substrate = texture2D(u_substrate, gl_PointCoord.xy);
     gl_FragColor = vec4(1.,v_data.zw*.5+.5, 1.0);
   }
   `,

@@ -3,10 +3,16 @@ import "./style.css";
 
 const regl = REGL();
 let mouse = [0, 0];
-let time = 0;
+let time = Math.random() * 100;
+let speed = Math.random() * 0.0006;
+let slowSpot = Math.random() - 0.5;
+let clear = false;
 window.addEventListener("mousemove", (e) => {
   mouse[0] = (2 * e.clientX) / window.innerWidth - 1;
   mouse[1] = 1 - (2 * e.clientY) / window.innerHeight;
+});
+window.addEventListener("mousedown", (e) => {
+  clear = true;
 });
 
 const NUM_POINTS = 1e4;
@@ -79,7 +85,7 @@ const drawParticles = regl({
     float timeMult = 5.;
     float timee = sin(time/timeMult)*timeMult;
     float dist = 1.-length(gl_PointCoord.xy - 0.5);
-    gl_FragColor = vec4(vec3(gl_PointCoord, 0.)*.5+fragColor, 1.);
+    gl_FragColor = vec4(gl_PointCoord.xyy*.7+.4*fragColor, 1.);
   }`,
 
   attributes: {
@@ -127,7 +133,6 @@ const draw = regl({
   uniform vec2 mouse;
   void main() {
     vec3 color = texture2D(texture, uv).rgb;
-    // vec3 color = vec3(uv,1.);
     gl_FragColor = vec4(color, 1);
   }`,
   attributes: {
@@ -146,14 +151,18 @@ const draw = regl({
   count: 3,
 });
 
-const slowSpot = Math.random() - 0.5;
 regl.frame(() => {
-  time += (mouse[0] - slowSpot) * 0.005;
-  // regl.clear({
-  //   depth: 1,
-  //   color: [236 / 255, 225 / 255, 208 / 255, 1],
-  // });
-
+  time += (mouse[0] - slowSpot) * speed;
   drawParticles();
   draw();
+  if (clear) {
+    time = Math.random() * 100;
+    speed = Math.random() * 0.0006;
+    slowSpot = Math.random() - 0.5;
+    regl.clear({
+      color: [0, 0, 0, 1],
+      framebuffer: drawbuffer,
+    });
+    clear = false;
+  }
 });

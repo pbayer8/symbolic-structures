@@ -65,11 +65,6 @@ const setup = () => {
     float imageAspectRatio = imageSize.x / imageSize.y;
     float ratio = canvasAspectRatio / imageAspectRatio;
     vec2 mouseUv = vec2(mouse.x + .5, mouse.y - .5);
-    // if (canvasAspectRatio > imageAspectRatio) {
-    //   imUv.x = uv.x * ratio + (1.0 - ratio) / 2.0;
-    // } else {
-    //   imUv.y = uv.y / ratio + (1.0 - 1.0 / ratio) / 2.0;
-    // }
     if (canvasAspectRatio > imageAspectRatio) {
       // The image is taller than the canvas
       imUv.y = uv.y / ratio + (1.0 - 1.0 / ratio) / 2.0 - (mouseUv.y)*(canvasAspectRatio/imageAspectRatio)*.15;
@@ -89,9 +84,7 @@ const setup = () => {
     }
     float blurredState = gaussianState/9.0;
     imUv.y += blurredState*distortedDepth*.2;
-    // imUv += blurredState*texture2D(depthTexture, imUv).r*.05;
     vec3 color = texture2D(imageTexture, imUv).rgb;
-    // gl_FragColor = vec4(vec3(state) + cop, 1);
     gl_FragColor = vec4(color, 1);
   }`,
 

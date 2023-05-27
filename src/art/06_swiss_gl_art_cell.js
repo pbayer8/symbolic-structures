@@ -43,7 +43,6 @@ class Physarum {
     const U = (this.U = { viewScale: 1, step_n: 1, mouse });
     // Function to add a parameter to the U object and the GUI
     const par = (s, v, ...arg) => {
-      // U[s] = v;
       U[s] = Math.random() * (arg[1] - arg[0]) + arg[0];
       gui.add(U, s, ...arg);
     };
@@ -68,10 +67,8 @@ class Physarum {
       ...this.U,
       ...colors,
       Clear: clearColor,
-      // Aspect: "fit",
       Blend: "s+d",
       FP: `${Object.keys(fields)
-        // .map((k, i) => `FOut += mix(vec4(0.),color${i},${k}(UV*viewScale).x)`)
         .map(
           (k, i) =>
             `FOut = mix(vec4(FOut.xyz,1.),color${i},${k}(UV*viewScale).x)`
@@ -131,7 +128,6 @@ class Physarum {
       // Calculate the sensor positions
       vec2 sense = senseDist*dir;
       // Macro to sample the field at the given position
-      // #define F(p) field((FOut.xy+(p))/wldSize).x
       #define F(p) ${Object.keys(fields)
         .map((k, i) => `${k}((FOut.xy+(p))/wldSize).x*fieldFactor${i}`)
         .join("+")}+50.*smoothstep(.2,0.,length((FOut.xy+p)/wldSize-mouse))
