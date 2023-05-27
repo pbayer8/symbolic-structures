@@ -1,5 +1,5 @@
-var v=Object.defineProperty;var w=(i,t,e)=>t in i?v(i,t,{enumerable:!0,configurable:!0,writable:!0,value:e}):i[t]=e;var p=(i,t,e)=>(w(i,typeof t!="symbol"?t+"":t,e),e);import"./style-e83eefe1.js";import{S,G as O}from"./lil-gui.esm-5d30250d.js";const d=document.createElement("canvas");d.width=window.innerWidth;d.height=window.innerHeight;document.body.appendChild(d);const m=S(d),o={},u={},f={},y=Math.random()*.5+.5,h={outerEdge:y,innerEdge:Math.random()*y},s=[-100,-100],r=new O;r.add(h,"outerEdge",0,1);r.add(h,"innerEdge",0,1);let c=0;const x=["x","y","z","w"],l=Math.random()*.3,z=[Math.random()*l,Math.random()*l,Math.random()*l,1];document.addEventListener("mousemove",i=>{s[0]=i.buttons?i.clientX/window.innerWidth:-100,s[1]=i.buttons?1-i.clientY/window.innerHeight:-100});class F{constructor(){this.index=c,this.channel=x[c%x.length],c++;const t=this.U={viewScale:1,step_n:1,mouse:s},e=(n,U,...a)=>{t[n]=Math.random()*(a[1]-a[0])+a[0],r.add(t,n,...a)};e("density",1,1,3,1),e("senseAng",5.5,-180,180),e("senseDist",18,1,50),e("moveAng",45,0,180),e("moveDist",0,-2,2),e("fieldFactor",0,-5,5),t.displayColor=[Math.random(),Math.random(),Math.random(),1],r.addColor(t,"displayColor")}frame(){for(let t=0;t<this.U.step_n;++t)this.step(m);m({...o,...this.U,...f,Clear:z,Blend:"s+d",FP:`${Object.keys(o).map((t,e)=>`FOut = mix(vec4(FOut.xyz,1.),color${e},${t}(UV*viewScale).x)`).join(";")};
-        `})}step(t){u["fieldFactor"+this.index]=this.U.fieldFactor,f["color"+this.index]=this.U.displayColor,this.field=t({mouse:s,...h,FP:`
+var v=Object.defineProperty;var w=(i,t,e)=>t in i?v(i,t,{enumerable:!0,configurable:!0,writable:!0,value:e}):i[t]=e;var p=(i,t,e)=>(w(i,typeof t!="symbol"?t+"":t,e),e);import"./style-e83eefe1.js";import{S,G as O}from"./lil-gui.esm-5d30250d.js";const d=document.createElement("canvas");d.width=window.innerWidth;d.height=window.innerHeight;document.body.appendChild(d);const m=S(d),s={},u={},f={},y=Math.random()*.5+.5,h={outerEdge:y,innerEdge:Math.random()*y},n=[-100,-100],o=new O;o.close();o.hide();o.add(h,"outerEdge",0,1);o.add(h,"innerEdge",0,1);let c=0;const x=["x","y","z","w"],l=Math.random()*.3,z=[Math.random()*l,Math.random()*l,Math.random()*l,1];document.addEventListener("mousemove",i=>{n[0]=i.buttons?i.clientX/window.innerWidth:-100,n[1]=i.buttons?1-i.clientY/window.innerHeight:-100});class F{constructor(){this.index=c,this.channel=x[c%x.length],c++;const t=this.U={viewScale:1,step_n:1,mouse:n},e=(a,U,...r)=>{t[a]=Math.random()*(r[1]-r[0])+r[0],o.add(t,a,...r)};e("density",1,1,3,1),e("senseAng",5.5,-180,180),e("senseDist",18,1,50),e("moveAng",45,0,180),e("moveDist",0,-2,2),e("fieldFactor",0,-5,5),t.displayColor=[Math.random(),Math.random(),Math.random(),1],o.addColor(t,"displayColor")}frame(){for(let t=0;t<this.U.step_n;++t)this.step(m);m({...s,...this.U,...f,Clear:z,Blend:"s+d",FP:`${Object.keys(s).map((t,e)=>`FOut = mix(vec4(FOut.xyz,1.),color${e},${t}(UV*viewScale).x)`).join(";")};
+        `})}step(t){u["fieldFactor"+this.index]=this.U.fieldFactor,f["color"+this.index]=this.U.displayColor,this.field=t({mouse:n,...h,FP:`
       vec2 dp = Src_step();
       float x=UV.x, y=UV.y;
       float l=x-dp.x, r=x+dp.x, u=y-dp.y, d=y+dp.y;
@@ -9,7 +9,7 @@ var v=Object.defineProperty;var w=(i,t,e)=>t in i?v(i,t,{enumerable:!0,configura
       FOut = 0.95*(S(x,y)+S(l,y)+S(r,y)+S(x,u)+S(x,d)+S(l,u)+S(r,u)+S(l,d)+S(r,d))/9.0;
       // Apply a rect sigmoid function to the field
       FOut *= smoothstep(outerEdge,innerEdge,length(XY*XY*XY*XY));
-      `},{story:2,format:"rgba8",tag:"field"+this.index}),o["field"+this.index]=this.field[0],this.points=t({field:this.field[0],...o,...u,...this.U,mouse:s,FP:`
+      `},{story:2,format:"rgba8",tag:"field"+this.index}),s["field"+this.index]=this.field[0],this.points=t({field:this.field[0],...s,...u,...this.U,mouse:n,FP:`
       FOut = Src(I);
       vec2 worldSize = vec2(field_size());
       float aspectRatio = worldSize.x/worldSize.y;
@@ -28,7 +28,7 @@ var v=Object.defineProperty;var w=(i,t,e)=>t in i?v(i,t,{enumerable:!0,configura
       vec2 mousePos = mouse;
       vec2 aspectMult = aspectRatio > 1. ? vec2(aspectRatio, 1.) : vec2(1., 1./aspectRatio);
       // Macro to sample the field at the given position
-      #define F(p) ${Object.keys(o).map((e,n)=>`${e}((FOut.xy+p)/worldSize).x*fieldFactor${n}`).join("+")}+50.*smoothstep(.3,0.,length(((FOut.xy+p)/worldSize-mousePos)*aspectMult))
+      #define F(p) ${Object.keys(s).map((e,a)=>`${e}((FOut.xy+p)/worldSize).x*fieldFactor${a}`).join("+")}+50.*smoothstep(.2,0.,length(((FOut.xy+p)/worldSize-mousePos)*aspectMult))
       // Sample the field at the sensor positions
       float c=F(sense), r=F(R*sense), l=F(sense*R);
       // Calculate the rotation angle in radians
