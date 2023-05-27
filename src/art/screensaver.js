@@ -3,7 +3,7 @@ import "../style.css";
 
 const regl = REGL();
 let mouse = [0, 0];
-let time = Math.random() * 100;
+let time = Math.random() * 50;
 let speed = Math.random() * 0.0006;
 let slowSpot = Math.random() - 0.5;
 let clear = false;
