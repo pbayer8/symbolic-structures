@@ -2,21 +2,28 @@ import GUI from "lil-gui";
 import SwissGL from "swissgl";
 import "./style.css";
 
-// TODO: field, bg and particle color convenience uniforms
+// TODO: initial particle distribution (random, grid, circle, etc.)
 // TODO: collision detection using field.w > threshold optional convention
+
 let sharedField;
+let _renderSharedField = "0.";
+let instances = [];
+let time = 0;
+let timeDelta = 0;
+let mouseButton = 0;
+const mouse = [0.5, 0.5];
+
 const gui = new GUI();
 gui.hide();
+
 const canvas = document.createElement("canvas");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 document.body.appendChild(canvas);
 const glsl = SwissGL(canvas);
-let instances = [];
-let time = 0;
-let timeDelta = 0;
-let _renderSharedField = "0.";
+
 export const renderSharedField = (v) => (_renderSharedField = v);
+
 function frame(t) {
   timeDelta = t / 1000 - time;
   time = t / 1000;
@@ -39,19 +46,18 @@ function frame(t) {
       FP: Object.keys(sharedFieldInstances)
         .map((k) => `${k}(UV)`)
         .join("+"),
-      Blend: BLEND_MODES.REPLACE,
     },
     { format: "rgba32f", tag: "field" }
   );
 }
 requestAnimationFrame(frame);
-const mouse = [0.5, 0.5];
-let mouseButton = 0;
+
 document.addEventListener("mousemove", (e) => {
   mouse[0] = e.clientX / window.innerWidth;
   mouse[1] = 1 - e.clientY / window.innerHeight;
   mouseButton = e.buttons ? 1 : 0;
 });
+
 export const BLEND_MODES = {
   ADD: "s+d",
   SUBTRACT: "d-s",
@@ -140,8 +146,9 @@ export class Automata {
     this.updateField = updateField;
     this.shareField = shareField;
     this.seed = Math.floor(Math.random() * 1000);
-    this.standardParticlesVP =
-      "VOut.xy = 2.0 * (particles(ID.xy).xy+XY*particleSize)/vec2(ViewSize) - 1.0;";
+    this.standardParticlesVP = `
+      particle = particles(ID.xy);
+      VOut.xy = 2.0 * (particles(ID.xy).xy+XY*particleSize)/vec2(ViewSize) - 1.0;`;
     instances.push(this);
   }
   uniformsToClipboard() {
@@ -173,6 +180,7 @@ export class Automata {
       particles: this.particles[0],
       Grid: this.particles[0].size,
       particleSize: this.particleSize,
+      Inc: "varying vec4 particle;",
       VP: this.standardParticlesVP,
       FP: this.renderParticles,
     });
@@ -215,7 +223,8 @@ export class Automata {
         return;
       }
       ${this.updateParticles}
-      ${this.wrapParticles ? "FOut.xy = mod(FOut.xy, worldSize);" : ""}`,
+      ${this.wrapParticles ? "FOut.xy = mod(FOut.xy, worldSize);" : ""}
+      // FOut.z = mod(FOut.z, TAU);`,
       },
       {
         size: Array(2).fill(Math.ceil(Math.sqrt(this.particleCount))),
@@ -236,6 +245,7 @@ export class Automata {
         Grid: this.particles[0].size,
         particleSize: this.particleSize,
         Blend: this.writeFieldBlend,
+        Inc: "varying vec4 particle;",
         VP: this.standardParticlesVP,
         FP: this.writeField,
       },
@@ -295,6 +305,32 @@ export class Worms extends Automata {
         senseDist: 2,
         turnSpeed: 1,
         moveDist: 1,
+        ...(params.uniforms || {}),
+      },
+      ...params,
+    });
+  }
+}
+
+export class StrangeWorms extends Automata {
+  constructor(params) {
+    super({
+      particleCount: 2000,
+      updateFieldBlur: 0,
+      updateFieldDecay: 0.95,
+      particleSize: 3,
+      updateParticles: `vec2 dir = vec2(cos(FOut.z), sin(FOut.z));
+    vec2 pos = FOut.xy;
+    vec2 pos2 = pos + dir * senseDist;
+    vec4 field = field(pos2);
+    if (field.x > 0.1) {
+      FOut.z += PI * field.x * turnSpeed * sin(time); 
+    }
+    FOut.xy += dir * moveDist * sin(pos.x*.01+time*1.7);`,
+      uniforms: {
+        senseDist: 2,
+        turnSpeed: 0.2,
+        moveDist: 2,
         ...(params.uniforms || {}),
       },
       ...params,
