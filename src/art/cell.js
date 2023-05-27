@@ -1,5 +1,5 @@
 import SwissGL from "swissgl";
-import "../style.css";
+import "./style.css";
 const canvas = document.createElement("canvas");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -21,7 +21,7 @@ gui.add(edge, "outerEdge", 0, 1);
 gui.add(edge, "innerEdge", 0, 1);
 let count = 0;
 const channels = ["x", "y", "z", "w"];
-const colorStrength = 0.2;
+const colorStrength = Math.random() * 0.3;
 const clearColor = [
   Math.random() * colorStrength,
   Math.random() * colorStrength,
@@ -115,11 +115,12 @@ class Physarum {
         mouse,
         FP: `
       FOut = Src(I);
-      vec2 wldSize = vec2(field_size());
+      vec2 worldSize = vec2(field_size());
+      float aspectRatio = worldSize.x/worldSize.y;
       // Initialize new particles with random positions and directions
-      if (FOut.w == 0.0 || FOut.x>=wldSize.x || FOut.y>=wldSize.y) {
+      if (FOut.w == 0.0 || FOut.x>=worldSize.x || FOut.y>=worldSize.y) {
           FOut = vec4(hash(ivec3(I, 123)), 1.0);
-          FOut.xyz *= vec3(wldSize, TAU); 
+          FOut.xyz *= vec3(worldSize, TAU); 
           return;
       }
       // Calculate the current direction of the particle
@@ -128,10 +129,14 @@ class Physarum {
       mat2 R = rot2(radians(senseAng));
       // Calculate the sensor positions
       vec2 sense = senseDist*dir;
+      vec2 mousePos = mouse;
+      vec2 aspectMult = aspectRatio > 1. ? vec2(aspectRatio, 1.) : vec2(1., 1./aspectRatio);
       // Macro to sample the field at the given position
       #define F(p) ${Object.keys(fields)
-        .map((k, i) => `${k}((FOut.xy+(p))/wldSize).x*fieldFactor${i}`)
-        .join("+")}+50.*smoothstep(.2,0.,length((FOut.xy+p)/wldSize-mouse))
+        .map((k, i) => `${k}((FOut.xy+p)/worldSize).x*fieldFactor${i}`)
+        .join(
+          "+"
+        )}+50.*smoothstep(.2,0.,length(((FOut.xy+p)/worldSize-mousePos)*aspectMult))
       // Sample the field at the sensor positions
       float c=F(sense), r=F(R*sense), l=F(sense*R);
       // Calculate the rotation angle in radians
@@ -147,7 +152,7 @@ class Physarum {
       // Update the particle position based on the direction and movement distance
       FOut.xy += dir*moveDist;
       // Wrap the particle position to stay within the world size
-      FOut.xy = mod(FOut.xy, wldSize);
+      FOut.xy = mod(FOut.xy, worldSize);
       `,
       },
       {

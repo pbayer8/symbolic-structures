@@ -15,8 +15,8 @@ const mouse = [-100, -100];
 // Create a new Physarum instance
 import GUI from "lil-gui";
 const gui = new GUI();
-// gui.close();
-// gui.hide();
+gui.close();
+gui.hide();
 gui.add(edge, "outerEdge", 0, 1);
 gui.add(edge, "innerEdge", 0, 1);
 let count = 0;
@@ -136,7 +136,7 @@ class Physarum {
         .map((k, i) => `${k}((FOut.xy+p)/worldSize).x*fieldFactor${i}`)
         .join(
           "+"
-        )}+50.*smoothstep(.3,0.,length(((FOut.xy+p)/worldSize-mousePos)*aspectMult))
+        )}+50.*smoothstep(.2,0.,length(((FOut.xy+p)/worldSize-mousePos)*aspectMult))
       // Sample the field at the sensor positions
       float c=F(sense), r=F(R*sense), l=F(sense*R);
       // Calculate the rotation angle in radians
