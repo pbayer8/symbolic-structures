@@ -16,6 +16,7 @@ const mouse = [-100, -100];
 import GUI from "lil-gui";
 const gui = new GUI();
 gui.close();
+gui.hide();
 gui.add(edge, "outerEdge", 0, 1);
 gui.add(edge, "innerEdge", 0, 1);
 let count = 0;

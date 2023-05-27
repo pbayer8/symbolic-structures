@@ -4,7 +4,7 @@ import "../style.css";
 const regl = REGL();
 let mouse = [0, 0];
 let time = Math.random() * 100;
-let speed = Math.random() * 0.0003;
+let speed = Math.random() * 0.0002;
 let slowSpot = Math.random() - 0.5;
 let clear = false;
 window.addEventListener("mousemove", (e) => {
