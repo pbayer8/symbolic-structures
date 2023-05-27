@@ -1,5 +1,5 @@
 import SwissGL from "swissgl";
-import "./style.css";
+import "../style.css";
 const canvas = document.createElement("canvas");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;

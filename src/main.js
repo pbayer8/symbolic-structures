@@ -6,15 +6,33 @@ canvas.height = window.innerHeight;
 document.body.appendChild(canvas);
 // create WebGL2 context end SwissGL
 const glsl = SwissGL(canvas);
-
 const fields = {};
 const fieldFactors = {};
 const colors = {};
+const outerEdge = Math.random() * 0.5 + 0.5;
+const edge = { outerEdge, innerEdge: Math.random() * outerEdge };
+const mouse = [-100, -100];
 // Create a new Physarum instance
 import GUI from "lil-gui";
 const gui = new GUI();
+// gui.close();
+// gui.hide();
+gui.add(edge, "outerEdge", 0, 1);
+gui.add(edge, "innerEdge", 0, 1);
 let count = 0;
 const channels = ["x", "y", "z", "w"];
+const colorStrength = Math.random() * 0.3;
+const clearColor = [
+  Math.random() * colorStrength,
+  Math.random() * colorStrength,
+  Math.random() * colorStrength,
+  1,
+];
+document.addEventListener("mousemove", (e) => {
+  mouse[0] = e.buttons ? e.clientX / window.innerWidth : -100;
+  mouse[1] = e.buttons ? 1 - e.clientY / window.innerHeight : -100;
+});
+
 class Physarum {
   static Tags = ["2d", "simulation"];
 
@@ -23,7 +41,7 @@ class Physarum {
     this.index = count;
     this.channel = channels[count % channels.length];
     count++;
-    const U = (this.U = { viewScale: 1, step_n: 1 });
+    const U = (this.U = { viewScale: 1, step_n: 1, mouse });
     // Function to add a parameter to the U object and the GUI
     const par = (s, v, ...arg) => {
       U[s] = Math.random() * (arg[1] - arg[0]) + arg[0];
@@ -49,20 +67,28 @@ class Physarum {
       ...fields,
       ...this.U,
       ...colors,
+      Clear: clearColor,
+      Blend: "s+d",
       FP: `${Object.keys(fields)
         .map(
           (k, i) =>
-            `FOut += min(mix(vec4(0.),color${i},${k}(UV*viewScale).x),1.)`
+            `FOut = mix(vec4(FOut.xyz,1.),color${i},${k}(UV*viewScale).x)`
         )
-        .join(";")}`,
+        .join(";")};
+        `,
     });
   }
 
   // Method to perform one simulation step
   step(glsl) {
+    fieldFactors["fieldFactor" + this.index] = this.U.fieldFactor;
+    colors["color" + this.index] = this.U.displayColor;
+
     // Update the field based on the source step and the surrounding cells
     this.field = glsl(
       {
+        mouse,
+        ...edge,
         FP: `
       vec2 dp = Src_step();
       float x=UV.x, y=UV.y;
@@ -71,26 +97,30 @@ class Physarum {
       #define S(x,y) (Src(vec2(x,y)))
       // Apply a 3x3 mean filter and decay factor to the field
       FOut = 0.95*(S(x,y)+S(l,y)+S(r,y)+S(x,u)+S(x,d)+S(l,u)+S(r,u)+S(l,d)+S(r,d))/9.0;
+      // Apply a rect sigmoid function to the field
+      FOut *= smoothstep(outerEdge,innerEdge,length(XY*XY*XY*XY));
       `,
       },
       { story: 2, format: "rgba8", tag: "field" + this.index }
     );
     fields["field" + this.index] = this.field[0];
-    fieldFactors["field" + this.index] = this.U.fieldFactor;
-    colors["color" + this.index] = this.U.displayColor;
+
     // Update the particles based on the field and the parameters
     this.points = glsl(
       {
         field: this.field[0],
         ...fields,
+        ...fieldFactors,
         ...this.U,
+        mouse,
         FP: `
       FOut = Src(I);
-      vec2 wldSize = vec2(field_size());
+      vec2 worldSize = vec2(field_size());
+      float aspectRatio = worldSize.x/worldSize.y;
       // Initialize new particles with random positions and directions
-      if (FOut.w == 0.0 || FOut.x>=wldSize.x || FOut.y>=wldSize.y) {
+      if (FOut.w == 0.0 || FOut.x>=worldSize.x || FOut.y>=worldSize.y) {
           FOut = vec4(hash(ivec3(I, 123)), 1.0);
-          FOut.xyz *= vec3(wldSize, TAU); 
+          FOut.xyz *= vec3(worldSize, TAU); 
           return;
       }
       // Calculate the current direction of the particle
@@ -99,10 +129,14 @@ class Physarum {
       mat2 R = rot2(radians(senseAng));
       // Calculate the sensor positions
       vec2 sense = senseDist*dir;
+      vec2 mousePos = mouse;
+      vec2 aspectMult = aspectRatio > 1. ? vec2(aspectRatio, 1.) : vec2(1., 1./aspectRatio);
       // Macro to sample the field at the given position
       #define F(p) ${Object.keys(fields)
-        .map((k) => `${k}((FOut.xy+(p))/wldSize).x*${fieldFactors[k]}`)
-        .join("+")}
+        .map((k, i) => `${k}((FOut.xy+p)/worldSize).x*fieldFactor${i}`)
+        .join(
+          "+"
+        )}+50.*smoothstep(.3,0.,length(((FOut.xy+p)/worldSize-mousePos)*aspectMult))
       // Sample the field at the sensor positions
       float c=F(sense), r=F(R*sense), l=F(sense*R);
       // Calculate the rotation angle in radians
@@ -118,7 +152,7 @@ class Physarum {
       // Update the particle position based on the direction and movement distance
       FOut.xy += dir*moveDist;
       // Wrap the particle position to stay within the world size
-      FOut.xy = mod(FOut.xy, wldSize);
+      FOut.xy = mod(FOut.xy, worldSize);
       `,
       },
       {
@@ -149,7 +183,7 @@ class Physarum {
   }
 }
 
-const physarums = Array(6)
+const physarums = Array(Math.ceil(Math.random() * 6))
   .fill("")
   .map((_, i) => new Physarum());
 

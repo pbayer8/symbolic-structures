@@ -1,5 +1,5 @@
 import REGL from "regl";
-import "./style.css";
+import "../style.css";
 
 const regl = REGL();
 let mouse = [0, 0];
@@ -85,7 +85,7 @@ const drawParticles = regl({
     float timeMult = 5.;
     float timee = sin(time/timeMult)*timeMult;
     float dist = 1.-length(gl_PointCoord.xy - 0.5);
-    gl_FragColor = vec4(gl_PointCoord.xyy*.7+.4*fragColor, 1.);
+    gl_FragColor = vec4(gl_PointCoord.xyy+.4*fragColor, 1.);
   }`,
 
   attributes: {

@@ -1,5 +1,5 @@
 import REGL from "regl";
-import "./style.css";
+import "../style.css";
 
 const regl = REGL();
 let mouse = [0, 0];
