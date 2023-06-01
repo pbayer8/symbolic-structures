@@ -1,0 +1,1 @@
+const n=[.5,.5,0],t=e=>{n[0]=e.clientX/window.innerWidth,n[1]=1-e.clientY/window.innerHeight,n[2]=e.buttons?1:0};document.addEventListener("pointermove",t);document.addEventListener("pointerdown",()=>n[2]=1);document.addEventListener("pointerup",()=>n[2]=0);export{n as m};

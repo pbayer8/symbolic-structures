@@ -1,4 +1,4 @@
-import{m as i}from"./mouse-c7876df6.js";import{R as l}from"./regl-a5845c54.js";const o=l();let t=Math.random()*100,s=Math.random()*2e-4,n=Math.random()-.5,e=!1;const a=1e4,m=4,c=o.buffer(Array(a).fill(0).map((d,r)=>[r/a])),f=o({vert:`
+import"./style-9feaaabd.js";import{R as l}from"./regl-a5845c54.js";import{m as i}from"./mouse-c0624d90.js";const o=l();let t=Math.random()*100,s=Math.random()*2e-4,n=Math.random()-.5,e=!1;const a=1e4,m=4,c=o.buffer(Array(a).fill(0).map((d,r)=>[r/a])),f=o({vert:`
   precision mediump float;
   attribute float index;
   uniform float time;
