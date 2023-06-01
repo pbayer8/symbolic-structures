@@ -224,7 +224,7 @@ export class Automata {
       }
       ${this.updateParticles}
       ${this.wrapParticles ? "FOut.xy = mod(FOut.xy, worldSize);" : ""}
-      // FOut.z = mod(FOut.z, TAU);`,
+       FOut.z = mod(FOut.z, TAU);`,
       },
       {
         size: Array(2).fill(Math.ceil(Math.sqrt(this.particleCount))),

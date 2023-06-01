@@ -1,4 +1,4 @@
-import { Automata, renderSharedField } from "./automata";
+import { Automata, renderSharedField } from "../../automata";
 
 renderSharedField(
   "mix(vec4(1.,0.,0.,1.), vec4(0.,1.,0.,1.), smoothstep(-.01,.01,field(UV).x))"

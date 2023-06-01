@@ -1,4 +1,4 @@
-import { Automata } from "./automata";
+import { Automata } from "../../automata";
 
 new Automata({
   particleCount: 12000,
