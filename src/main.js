@@ -7,18 +7,21 @@ new Automata({
   updateFieldBlur: 1,
   updateFieldDecay: 0.9,
   particleSize: 0.5,
-  updateParticles: `vec2 dir = vec2(cos(FOut.z), sin(FOut.z))*friction;
-  vec3 fieldData = field(FOut.xy/worldSize).xyz;
+  initialParticles: `FOut = vec4(hash(ivec3(I, seed)).xy,hash(ivec3(seed,I*2)).xy);
+    FOut *= vec4(worldSize,2.,2.);
+    FOut.zw -= 1.;`,
+  updateParticles: `
+  vec2 dir = FOut.zw;
+  vec4 fieldData = field(FOut.xy/worldSize);
   vec2 fieldDir = fieldData.xy;
   float fieldMag = fieldData.z;
   float updateStrength = fieldMag > explosion ? -updateDir*explosionStrength : updateDir;
   vec2 meanDir = (1.-updateStrength)*dir + updateStrength*fieldDir;
+  // meanDir = normalize(meanDir)*min(length(meanDir), 1.);
   meanDir = normalize(meanDir);
-  float newAng = atan(meanDir.y, meanDir.x);
   FOut.xy += meanDir*moveDist;
-  // FOut.xy += dir;
-  FOut.z = newAng;`,
-  writeField: `vec2 dir = vec2(cos(particle.z), sin(particle.z));
+  FOut.zw = meanDir;`,
+  writeField: `vec2 dir = particle.zw;
   FOut.xy = dir;
   FOut.z += 1.;`,
   renderField: `vec3 f = field(UV).xyz;
@@ -29,6 +32,5 @@ new Automata({
     moveDist: 1,
     explosion: 10,
     explosionStrength: 1,
-    friction: 0.5,
   },
 });

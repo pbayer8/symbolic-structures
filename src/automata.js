@@ -90,7 +90,7 @@ export class Automata {
     renderParticlesBlend = BLEND_MODES.PREMULTIPLIED,
     updateFieldDecay = 0.95,
     updateFieldBlur = 1,
-    updateFieldSteps = 1, // TODO: this isn't working quite right
+    updateFieldSteps = 1,
     updateField = `vec2 dp = Src_step()*updateFieldBlur;
     float x=UV.x, y=UV.y;
     float l=x-dp.x, r=x+dp.x, u=y-dp.y, d=y+dp.y;
@@ -249,8 +249,7 @@ export class Automata {
         FP: `FOut = Src(I);
       vec2 worldSize = vec2(field_size());
       ${this.updateParticles}
-      ${this.wrapParticles ? "FOut.xy = mod(FOut.xy, worldSize);" : ""}
-       FOut.z = mod(FOut.z, TAU);`,
+      ${this.wrapParticles ? "FOut.xy = mod(FOut.xy, worldSize);" : ""}`,
       },
       this.particles
     );
