@@ -11,8 +11,6 @@ new Automata({
   vec3 fieldData = field(FOut.xy/worldSize).xyz;
   vec2 fieldDir = fieldData.xy;
   float fieldMag = fieldData.z;
-  // if field mag is greater than explosion, updatedir moves negative
-  // float updateStrength = updateDir*(smoothstep(explosion, 0., fieldMag)-.5);
   float updateStrength = fieldMag > explosion ? -updateDir*explosionStrength : updateDir;
   vec2 meanDir = (1.-updateStrength)*dir + updateStrength*fieldDir;
   meanDir = normalize(meanDir);
