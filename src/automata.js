@@ -4,6 +4,10 @@ import "./style.css";
 
 // TODO: initial particle distribution (random, grid, circle, etc.)
 // TODO: collision detection using field.w > threshold optional convention
+// TODO: particle life
+// TODO: particle lenia
+// TODO: particles in force field
+// TODO: gravity
 
 let sharedField;
 let _renderSharedField = "0.";
@@ -110,7 +114,7 @@ export class Automata {
       target[name] = value;
       if (debug) {
         if (typeof value === "number")
-          this.gui.add(target, name, -1 * value, 4 * value);
+          this.gui.add(target, name, -1 * value, 8 * value);
         else if (Array.isArray(value)) {
           this.gui.addColor(target, name);
         }
@@ -119,6 +123,7 @@ export class Automata {
     if (debug) {
       this.gui = gui.addFolder(this.name);
       this.gui.add(this, "uniformsToClipboard");
+      this.gui.add(this, "reset");
       gui.show();
     }
 
@@ -173,6 +178,7 @@ export class Automata {
       Blend: this.renderFieldBlend,
       field: this.field[0],
       FP: this.renderField,
+      ...this.uniforms,
     });
     glsl({
       renderParticlesColor: this.renderParticlesColor,
@@ -184,6 +190,10 @@ export class Automata {
       VP: this.standardParticlesVP,
       FP: this.renderParticles,
     });
+  }
+  reset() {
+    glsl({ FP: `0.` }, this.particles[0]);
+    glsl({ FP: `0.` }, this.field[0]);
   }
   step(glsl) {
     for (let i = 0; i < this.updateFieldSteps; i++)
@@ -254,38 +264,6 @@ export class Automata {
   }
 }
 
-export class Physarum extends Automata {
-  constructor(params) {
-    super({
-      particleCount: 10000,
-      particleSize: 1,
-      updateParticles: `
-  vec2 dir = vec2(cos(FOut.z), sin(FOut.z));
-  mat2 R = rot2(radians(senseAng));
-  vec2 sense = senseDist*dir;
-  #define F(p) field((FOut.xy+(p))/worldSize)[int(senseChannel)]
-  float c=F(sense), r=F(R*sense), l=F(sense*R);
-  float rotAng = radians(moveAng);
-  if (l>c && c>r) {
-      FOut.z -= rotAng;
-  } else if (r>c && c>l) {
-      FOut.z += rotAng;
-  } else if (c<=r && c<=l) {
-      FOut.z += sign(hash(ivec3(FOut.xyz*seed)).x-0.5)*rotAng;
-  }
-  FOut.xy += dir*moveDist;`,
-      ...params,
-      uniforms: {
-        senseDist: 18,
-        senseAng: 6,
-        senseChannel: 0,
-        moveAng: 45,
-        moveDist: 1,
-        ...(params.uniforms || {}),
-      },
-    });
-  }
-}
 export class Worms extends Automata {
   constructor(params) {
     super({
