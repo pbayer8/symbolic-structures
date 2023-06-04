@@ -99,6 +99,7 @@ export class Automata {
     FOut = updateFieldDecay*(S(x,y)+S(l,y)+S(r,y)+S(x,u)+S(x,d)+S(l,u)+S(r,u)+S(l,d)+S(r,d))/9.0;`,
     // initialParticles = "FOut = vec4(UV*worldSize,0.,1.);",
     initialParticles = `FOut = vec4(hash(ivec3(I, seed)), 1.0);FOut.xyz *= vec3(worldSize, TAU);`,
+    initialField = "0.",
     updateParticles = `vec2 dir = vec2(cos(FOut.z), sin(FOut.z));
     FOut.xy += dir * .1;`,
     uniforms = {},
@@ -138,12 +139,12 @@ export class Automata {
     Object.entries(this.uniforms).forEach(([key, value]) =>
       param(key, value, this.uniforms)
     );
-
     this.renderParticles = renderParticles;
     this.renderField = renderField;
     this.writeField = writeField;
     this.wrapParticles = wrapParticles;
     this.initialParticles = initialParticles;
+    this.initialField = initialField;
     this.updateParticles = updateParticles;
     this.renderParticlesBlend = renderParticlesBlend;
     this.renderFieldBlend = renderFieldBlend;
@@ -154,6 +155,7 @@ export class Automata {
     this.standardParticlesVP = `
       particle = particles(ID.xy);
       VOut.xy = 2.0 * (particles(ID.xy).xy+XY*particleSize)/vec2(ViewSize) - 1.0;`;
+    this.reset();
     instances.push(this);
   }
   uniformsToClipboard() {
@@ -192,12 +194,34 @@ export class Automata {
     });
   }
   reset() {
-    glsl({ FP: `0.` }, this.particles[0]);
-    glsl({ FP: `0.` }, this.field[0]);
+    this.field = glsl(
+      {
+        FP: this.initialField,
+      },
+      {
+        story: 2,
+        format: "rgba32f",
+        tag: `field_${this.name}`,
+      }
+    );
+    this.particles = glsl(
+      {
+        seed: this.seed,
+        field: this.shareField && sharedField ? sharedField : this.field[0],
+        FP: `vec2 worldSize = vec2(field_size());
+        ${this.initialParticles}`,
+      },
+      {
+        size: Array(2).fill(Math.ceil(Math.sqrt(this.particleCount))),
+        story: 2,
+        format: "rgba32f",
+        tag: `particles_${this.name}`,
+      }
+    );
   }
   step(glsl) {
     for (let i = 0; i < this.updateFieldSteps; i++)
-      this.field = glsl(
+      glsl(
         {
           updateFieldDecay: Math.pow(
             this.updateFieldDecay,
@@ -206,13 +230,9 @@ export class Automata {
           updateFieldBlur: this.updateFieldBlur,
           FP: this.updateField,
         },
-        {
-          story: 2,
-          format: "rgba32f",
-          tag: `field_${this.name}`,
-        }
+        this.field
       );
-    this.particles = glsl(
+    glsl(
       {
         ...this.uniforms,
         mouse,
@@ -228,20 +248,11 @@ export class Automata {
         ),
         FP: `FOut = Src(I);
       vec2 worldSize = vec2(field_size());
-      if (FOut.w == 0.0 || FOut.x>=worldSize.x || FOut.y>=worldSize.y) {
-        ${this.initialParticles}
-        return;
-      }
       ${this.updateParticles}
       ${this.wrapParticles ? "FOut.xy = mod(FOut.xy, worldSize);" : ""}
        FOut.z = mod(FOut.z, TAU);`,
       },
-      {
-        size: Array(2).fill(Math.ceil(Math.sqrt(this.particleCount))),
-        story: 2,
-        format: "rgba32f",
-        tag: `particles_${this.name}`,
-      }
+      this.particles
     );
     glsl(
       {
