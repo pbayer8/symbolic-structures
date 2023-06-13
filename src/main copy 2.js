@@ -31,8 +31,8 @@ class ParticleLife {
     // Adding GUI controls for the parameters
     gui.add(this, "step_n", 0, 50, 1); // Control for 'step_n' in range [0, 50] with step 1
     gui.add(this, "dt", 0.0, 0.5); // Control for 'dt' in range [0.0, 0.5]
-    gui.add(this, "worldExtent", 10, 1000); // Control for 'worldExtent' in range [10, 50]
-    gui.add(this, "repulsion", 0.0, 10.0); // Control for 'repulsion' in range [0.0, 10.0]
+    gui.add(this, "worldExtent", 1, window.innerHeight); // Control for 'worldExtent' in range [10, 50]
+    gui.add(this, "repulsion", 0.0, 10.0 * (window.innerHeight / 30)); // Control for 'repulsion' in range [0.0, 10.0]
     gui.add(this, "inertia", 0.0, 1.0); // Control for 'inertia' in range [0.0, 1.0]
     gui.add(this, "reset"); // Control for reset method
 
@@ -72,8 +72,7 @@ class ParticleLife {
   }
 
   // Method to perform a simulation step
-  step(touchPos) {
-    touchPos = touchPos || [-1000, 0, 0]; // Default touchPos if not provided
+  step() {
     const { K, F, points, worldExtent, repulsion, inertia, dt } = this; // Destructuring class variables for easier access
 
     // Performing simulation step(s)
@@ -81,8 +80,7 @@ class ParticleLife {
       this.glsl(
         {
           F,
-          touchPos,
-          worldExtent,
+          worldExtent: worldExtent,
           repulsion,
           inertia,
           dt,
@@ -90,13 +88,14 @@ class ParticleLife {
           FP: `
           FOut = Src(I); // current particle
           #define wrap(p) ((fract((p)/worldExtent+0.5)-0.5)*worldExtent)
-          vec3 force=vec3(0); // initialize force vector to 0
+          // #define wrap(p) (mod(p,worldExtent))
+          vec2 force=vec2(0); // initialize force vector to 0
           
           // Looping through all particles to compute forces
           for (int y=0; y<ViewSize.y; ++y)
           for (int x=0; x<ViewSize.x; ++x) {
             vec4 data1 = Src(ivec2(x,y)); // particle to compare with
-            vec3 dpos = wrap(data1.xyz-FOut.xyz); // distance vector between particles
+            vec2 dpos = wrap(data1.xy-FOut.xy); // distance vector between particles
             float r = length(dpos); // length of distance vector
             if (r>3.0) continue; // Skip if particles are too far
             dpos /= r+1e-8; // normalize distance vector
@@ -106,13 +105,9 @@ class ParticleLife {
             force += dpos*(att-rep); // add net force (attraction - repulsion) to the force vector
           }
 
-          // adding an additional force when touchPos is near
-          vec3 touchVec = (touchPos-FOut.xyz);
-          force += touchVec*exp(-dot(touchVec, touchVec))*50.0;
-          
           // Compute new velocity and position
-          vec3 vel = wrap(FOut.xyz-past(I).xyz)*pow(inertia, dt);
-          FOut.xyz = wrap(FOut.xyz+vel+0.5*force*(dt*dt));
+          vec2 vel = wrap(FOut.xy-past(I).xy)*pow(inertia, dt);
+          FOut.xy = wrap(FOut.xy+vel+0.5*force*(dt*dt));
       `,
         },
         points
@@ -120,42 +115,11 @@ class ParticleLife {
   }
 
   // Method to draw a frame
-  frame(params) {
+  frame() {
     const { K, points, worldExtent } = this;
-    let touchPos;
-    // Convert touchPos to world coordinates if it is pressed
-    if (params.pointer[2]) {
-      const [x, y, _] = params.pointer;
-      const s = worldExtent / Math.min(...params.canvasSize);
-      touchPos = [x * s, y * s, 0];
-    }
 
     // Perform a simulation step
-    this.step(touchPos);
-
-    // Draw the particles and the force field
-    const field = glsl(
-      {
-        K,
-        worldExtent,
-        points: points[0],
-        Grid: [...points[0].size, 4],
-        Blend: "s+d",
-        Clear: 0.0,
-        Inc: `varying vec3 color;`,
-        VP: `
-          vec4 d = points(ID.xy);
-          color = cos((d.w/K+vec3(0,0.33,0.66))*TAU)*0.5+0.5;
-          VOut.xy = 2.0*(d.xy+XY*1.5)/worldExtent;
-          VOut.xy -= 2.0*vec2(ID.z%2, ID.z/2)*sign(d.xy);`,
-        FP: `color*smoothstep(1.0, 0.8, length(XY)),1`,
-      },
-      { format: "rgba16f", tag: "field" }
-    );
-
-    // Apply post processing to field
-    glsl({ field, Aspect: "fit", FP: `sqrt(field(UV))*0.07` });
-
+    this.step();
     // Draw the particles on top of the field
     glsl({
       K,
@@ -169,7 +133,7 @@ class ParticleLife {
       VP: `
           vec4 d = points(ID.xy);
           color = cos((d.w/K+vec3(0,0.33,0.66))*TAU)*0.5+0.5;
-          VOut.xy = 2.0*(d.xy+XY/8.0)/worldExtent;`,
+          VOut.xy = 2.0*(d.xy+XY/120.*worldExtent)/worldExtent;`,
       FP: `color, smoothstep(1.0, 0.6, length(XY))`,
     });
   }
@@ -180,9 +144,6 @@ const physarum = new ParticleLife();
 function frame(t) {
   requestAnimationFrame(frame);
 
-  physarum.frame({
-    pointer: [0, 0, 0],
-    canvasSize: [canvas.width, canvas.height],
-  });
+  physarum.frame();
 }
 requestAnimationFrame(frame);

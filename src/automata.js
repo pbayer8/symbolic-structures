@@ -1,5 +1,6 @@
 import GUI from "lil-gui";
 import SwissGL from "swissgl";
+import { mouse } from "./mouse";
 import "./style.css";
 
 // TODO: initial particle distribution (random, grid, circle, etc.)
@@ -11,11 +12,8 @@ import "./style.css";
 
 let sharedField;
 let _renderSharedField = "0.";
-let instances = [];
 let time = 0;
 let timeDelta = 0;
-let mouseButton = 0;
-const mouse = [0.5, 0.5];
 
 const gui = new GUI();
 gui.hide();
@@ -24,7 +22,7 @@ const canvas = document.createElement("canvas");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 document.body.appendChild(canvas);
-const glsl = SwissGL(canvas);
+export const glsl = SwissGL(canvas);
 
 export const renderSharedField = (v) => (_renderSharedField = v);
 
@@ -37,9 +35,9 @@ function frame(t) {
       field: sharedField,
       FP: _renderSharedField,
     });
-  instances.forEach((i) => i.frame());
+  Automata.instances.forEach((i) => i.frame());
   const sharedFieldInstances = Object.fromEntries(
-    instances
+    Automata.instances
       .filter((i) => i.shareField)
       .map((i) => [`field_${i.name}`, i.field[0]])
   );
@@ -56,12 +54,6 @@ function frame(t) {
 }
 requestAnimationFrame(frame);
 
-document.addEventListener("mousemove", (e) => {
-  mouse[0] = e.clientX / window.innerWidth;
-  mouse[1] = 1 - e.clientY / window.innerHeight;
-  mouseButton = e.buttons ? 1 : 0;
-});
-
 export const BLEND_MODES = {
   ADD: "s+d",
   SUBTRACT: "d-s",
@@ -74,12 +66,15 @@ export const BLEND_MODES = {
 };
 
 export class Automata {
+  static instances = [];
   constructor({
     name = "",
     debug = false,
     particleCount = 1024,
     particleSize = 1,
     shareField = true,
+    readOtherFields = false,
+    readOtherParticles = false,
     renderParticles = "mix(vec4(0.), renderParticlesColor, smoothstep(1.0, 0.0, length(XY)))",
     renderParticlesColor = [1, 1, 1, 1],
     renderField = "mix(vec4(0.), renderFieldColor, length(field(UV))/2.)",
@@ -104,9 +99,11 @@ export class Automata {
     FOut.xy += dir * .1;`,
     uniforms = {},
     numSteps = 1,
+    numStorysParticles = 2,
     wrapParticles = true,
   } = {}) {
-    this.index = instances.length;
+    this.instances = Automata.instances;
+    this.index = Automata.instances.length;
     this.debug = debug;
     this.name = name || this.index;
     this.uniforms = uniforms;
@@ -142,12 +139,15 @@ export class Automata {
     this.renderParticles = renderParticles;
     this.renderField = renderField;
     this.writeField = writeField;
+    this.readOtherFields = readOtherFields;
+    this.readOtherParticles = readOtherParticles;
     this.wrapParticles = wrapParticles;
     this.initialParticles = initialParticles;
     this.initialField = initialField;
     this.updateParticles = updateParticles;
     this.renderParticlesBlend = renderParticlesBlend;
     this.renderFieldBlend = renderFieldBlend;
+    this.numStorysParticles = numStorysParticles;
     this.writeFieldBlend = writeFieldBlend;
     this.updateField = updateField;
     this.shareField = shareField;
@@ -156,7 +156,7 @@ export class Automata {
       particle = particles(ID.xy);
       VOut.xy = 2.0 * (particles(ID.xy).xy+XY*particleSize)/vec2(ViewSize) - 1.0;`;
     this.reset();
-    instances.push(this);
+    Automata.instances.push(this);
   }
   uniformsToClipboard() {
     const json = JSON.stringify({
@@ -204,20 +204,21 @@ export class Automata {
         tag: `field_${this.name}`,
       }
     );
-    this.particles = glsl(
-      {
-        seed: this.seed,
-        field: this.shareField && sharedField ? sharedField : this.field[0],
-        FP: `vec2 worldSize = vec2(field_size());
+    for (let i = 0; i < this.numStorysParticles; i++)
+      this.particles = glsl(
+        {
+          seed: this.seed,
+          field: this.shareField && sharedField ? sharedField : this.field[0],
+          FP: `vec2 worldSize = vec2(field_size());
         ${this.initialParticles}`,
-      },
-      {
-        size: Array(2).fill(Math.ceil(Math.sqrt(this.particleCount))),
-        story: 2,
-        format: "rgba32f",
-        tag: `particles_${this.name}`,
-      }
-    );
+        },
+        {
+          size: Array(2).fill(Math.ceil(Math.sqrt(this.particleCount))),
+          story: this.numStorysParticles,
+          format: "rgba32f",
+          tag: `particles_${this.name}`,
+        }
+      );
   }
   step(glsl) {
     for (let i = 0; i < this.updateFieldSteps; i++)
@@ -236,16 +237,25 @@ export class Automata {
       {
         ...this.uniforms,
         mouse,
-        mouseButton,
         time,
         timeDelta,
+        ...(this.numStorysParticles > 2 ? { past: this.particles[1] } : {}),
         seed: this.seed,
         field: this.shareField && sharedField ? sharedField : this.field[0],
-        ...Object.fromEntries(
-          instances
-            .filter((i) => i.field)
-            .map((i) => [`field_${i.name}`, i.field[0]])
-        ),
+        ...(this.readOtherFields
+          ? Object.fromEntries(
+              Automata.instances
+                .filter((i) => i.field)
+                .map((i) => [`field_${i.name}`, i.field[0]])
+            )
+          : {}),
+        ...(this.readOtherParticles
+          ? Object.fromEntries(
+              Automata.instances
+                .filter((i) => i.particles)
+                .map((i) => [`particles_${i.name}`, i.particles[0]])
+            )
+          : {}),
         FP: `FOut = Src(I);
       vec2 worldSize = vec2(field_size());
       ${this.updateParticles}
@@ -257,7 +267,6 @@ export class Automata {
       {
         ...this.uniforms,
         mouse,
-        mouseButton,
         time,
         timeDelta,
         seed: this.seed,
@@ -319,6 +328,45 @@ export class StrangeWorms extends Automata {
         senseDist: 2,
         turnSpeed: 0.2,
         moveDist: 2,
+        ...(params.uniforms || {}),
+      },
+      ...params,
+    });
+  }
+}
+
+export class velocityField extends Automata {
+  constructor(params) {
+    super({
+      particleCount: 50000,
+      updateFieldBlur: 1,
+      updateFieldDecay: 0.9,
+      particleSize: 0.5,
+      initialParticles: `FOut = vec4(hash(ivec3(I, seed)).xy,hash(ivec3(seed,I*2)).xy);
+    FOut *= vec4(worldSize,2.,2.);
+    FOut.zw -= 1.;`,
+      updateParticles: `
+  vec2 dir = FOut.zw;
+  vec4 fieldData = field(FOut.xy/worldSize);
+  vec2 fieldDir = fieldData.xy;
+  float fieldMag = fieldData.z;
+  float updateStrength = fieldMag > explosion ? -updateDir*explosionStrength : updateDir;
+  vec2 meanDir = (1.-updateStrength)*dir + updateStrength*fieldDir;
+  // meanDir = normalize(meanDir)*min(length(meanDir), 1.);
+  meanDir = normalize(meanDir);
+  FOut.xy += meanDir*moveDist;
+  FOut.zw = meanDir;`,
+      writeField: `vec2 dir = particle.zw;
+  FOut.xy = dir;
+  FOut.z += 1.;`,
+      renderField: `vec3 f = field(UV).xyz;
+  FOut.xy = abs(f.xy);
+  FOut.z = smoothstep(0., explosion/6., f.z);`,
+      uniforms: {
+        updateDir: 0.03,
+        moveDist: 1,
+        explosion: 10,
+        explosionStrength: 1,
         ...(params.uniforms || {}),
       },
       ...params,

@@ -131,3 +131,15 @@ export const Triangles = {
     moveDist: 6,
   },
 };
+
+export const Clovers = {
+  particleCount: 100000,
+  particleSize: 0.2,
+  updateFieldDecay: 0.95,
+  uniforms: {
+    senseDist: 5.76,
+    senseAng: 56.16,
+    moveAng: 36.9,
+    moveDist: 2.448,
+  },
+};
