@@ -258,7 +258,11 @@ export class Automata {
           : {}),
         FP: `FOut = Src(I);
       vec2 worldSize = vec2(field_size());
-      ${this.updateParticles}
+      ${
+        typeof this.updateParticles === "function"
+          ? this.updateParticles()
+          : this.updateParticles
+      }
       ${this.wrapParticles ? "FOut.xy = mod(FOut.xy, worldSize);" : ""}`,
       },
       this.particles
