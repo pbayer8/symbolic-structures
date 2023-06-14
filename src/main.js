@@ -1,3 +1,4 @@
+import { DISTRIBUTIONS } from "./automata";
 import { ParticleLife } from "./particle-life";
 import { Diatoms, Physarum } from "./physarum";
 
@@ -32,6 +33,7 @@ new ParticleLife({
   uniforms: {},
   mouseRadius: Math.random() * 0.25,
   mouseStrength: Math.random() - 0.5,
+  initialParticlesXY: DISTRIBUTIONS.DOT_GRID(10),
 });
 
 new ParticleLife({
@@ -43,6 +45,7 @@ new ParticleLife({
   uniforms: {},
   mouseRadius: Math.random() * 0.25,
   mouseStrength: Math.random() - 0.5,
+  initialParticlesXY: DISTRIBUTIONS.HORIZONTAL_LINE,
 });
 
 new Physarum({
@@ -52,6 +55,7 @@ new Physarum({
   particleColor: [Math.random(), Math.random(), Math.random(), Math.random()],
   mouseRadius: Math.random() * 0.25,
   mouseStrength: Math.random() - 0.5,
+  initialParticlesXY: DISTRIBUTIONS.VERTICLE_LINE,
 });
 
 new Physarum({
@@ -61,4 +65,5 @@ new Physarum({
   fieldColor: [Math.random(), Math.random(), Math.random(), Math.random()],
   mouseRadius: Math.random() * 0.25,
   mouseStrength: Math.random() - 0.5,
+  initialParticlesXY: DISTRIBUTIONS.CIRCLE(0.25),
 });

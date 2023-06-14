@@ -64,6 +64,30 @@ export const BLEND_MODES = {
   REPLACE: "s",
 };
 
+export const DISTRIBUTIONS = {
+  RANDOM_WORLD: `hash(ivec3(I, seed)).xy * worldSize`,
+  RANDOM_ANGLE: `vec2(hash(ivec3(I, seed)).x * TAU,1.0)`,
+  RANDOM_RANGE: `hash(ivec3(I, seed)).xy * 2. - 1.`,
+  RANDOM_UNIT: `normalize(hash(ivec3(I, seed)).xy * 2. - 1.)`,
+  RANDOM: `hash(ivec3(I, seed)).xy`,
+  RANDOM2: `hash(ivec3(seed, I*2)).xy`,
+  DOT_GRID: (count) => `fract(vec2(I) / ${count}.0) * worldSize`,
+  CIRCLE: (radius) =>
+    `vec2(cos(hash(ivec3(I, seed)).x * TAU), sin(hash(ivec3(I, seed)).x * TAU)) * ${radius} * max(worldSize.x,worldSize.y) - worldSize/2.`,
+  VERTICLE_LINE: `vec2(worldSize.x/2., hash(ivec3(I, seed)).x * worldSize.y)`,
+  HORIZONTAL_LINE: `vec2(hash(ivec3(I, seed)).x * worldSize.x, worldSize.y/2.)`,
+  VERTICLE_LINES: (count) =>
+    `vec2(fract(vec2(I).x / ${count}.0) * worldSize.x, fract(hash(ivec3(I, seed)).xy * ${count}.0) * worldSize.y)`,
+  HORIZONTAL_LINES: (count) =>
+    `vec2(fract(hash(ivec3(I, seed)).xy * ${count}.0) * worldSize.x, fract(vec2(I).x / ${count}.0) * worldSize.y)`,
+  ZERO: `vec2(0.)`,
+  CONST: (x, y) => `vec2(${x}, ${y})`,
+  VERTICLE_LINE_AT: (x) =>
+    `vec2(${x}*worldSize.x, hash(ivec3(I, seed)).x * worldSize.y)`,
+  HORIZONTAL_LINE_AT: (y) =>
+    `vec2(hash(ivec3(I, seed)).x * worldSize.x, ${y}*worldSize.y)`,
+};
+
 export class Automata {
   static instances = [];
   constructor({
@@ -91,11 +115,10 @@ export class Automata {
     #define S(x,y) (Src(vec2(x,y)))
     // Apply a 3x3 mean filter and decay factor to the field
     FOut = updateFieldDecay*(S(x,y)+S(l,y)+S(r,y)+S(x,u)+S(x,d)+S(l,u)+S(r,u)+S(l,d)+S(r,d))/9.0;`,
-    // initialParticles = "FOut = vec4(UV*worldSize,0.,1.);",
-    initialParticles = `FOut = vec4(hash(ivec3(I, seed)), 1.0);FOut.xyz *= vec3(worldSize, TAU);`,
+    initialParticlesXY = DISTRIBUTIONS.RANDOM_WORLD,
+    initialParticlesZW = DISTRIBUTIONS.RANDOM_ANGLE,
     initialField = "0.",
-    updateParticles = `vec2 dir = vec2(cos(FOut.z), sin(FOut.z));
-    FOut.xy += dir * .1;`,
+    updateParticles = ``,
     uniforms = {},
     numSteps = 1,
     numStorysParticles = 2,
@@ -145,7 +168,8 @@ export class Automata {
     this.readOtherFields = readOtherFields;
     this.readOtherParticles = readOtherParticles;
     this.wrapParticles = wrapParticles;
-    this.initialParticles = initialParticles;
+    this.initialParticlesXY = initialParticlesXY;
+    this.initialParticlesZW = initialParticlesZW;
     this.initialField = initialField;
     this.updateParticles = updateParticles;
     this.renderParticlesBlend = renderParticlesBlend;
@@ -213,7 +237,7 @@ export class Automata {
           seed: this.seed,
           field: this.shareField && sharedField ? sharedField : this.field[0],
           FP: `vec2 worldSize = vec2(field_size());
-        ${this.initialParticles}`,
+          FOut = vec4(${this.initialParticlesXY}, ${this.initialParticlesZW});`,
         },
         {
           size: Array(2).fill(Math.ceil(Math.sqrt(this.particleCount))),
@@ -360,9 +384,7 @@ export class velocityField extends Automata {
       updateFieldBlur: 1,
       updateFieldDecay: 0.9,
       particleSize: 0.5,
-      initialParticles: `FOut = vec4(hash(ivec3(I, seed)).xy,hash(ivec3(seed,I*2)).xy);
-    FOut *= vec4(worldSize,2.,2.);
-    FOut.zw -= 1.;`,
+      initialParticlesZW: DISTRIBUTIONS.RANDOM_UNIT,
       updateParticles: `
   vec2 dir = FOut.zw;
   vec4 fieldData = field(FOut.xy/worldSize);

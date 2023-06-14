@@ -1,4 +1,4 @@
-import { Automata } from "./automata";
+import { Automata, DISTRIBUTIONS } from "./automata";
 
 export class ParticleLife extends Automata {
   static instances = [];
@@ -9,10 +9,7 @@ export class ParticleLife extends Automata {
       // renderField: `0.`,
       renderField: "mix(vec4(0.), fieldColor, length(field(UV))/2.)*.25",
       readOtherParticles: true,
-      initialParticles: `
-      vec2 pos = (hash(ivec3(I, seed)).xy)*worldSize;
-      vec2 vel = (hash(ivec3(I, seed)).xy-0.5)*5.;
-      FOut = vec4(pos, vel);`,
+      initialParticlesZW: DISTRIBUTIONS.RANDOM_UNIT,
       updateParticles: () => `
   FOut = Src(I); // current particle
   #define wrap(p) (fract(p+0.5)-0.5)
