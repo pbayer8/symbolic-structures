@@ -3,7 +3,6 @@ import SwissGL from "swissgl";
 import { mouse } from "./mouse";
 import "./style.css";
 
-// TODO: initial particle distribution (random, grid, circle, etc.)
 // TODO: collision detection using field.w > threshold optional convention
 // TODO: particle lenia
 // TODO: particles in force field
@@ -86,6 +85,8 @@ export const DISTRIBUTIONS = {
     `vec2(${x}*worldSize.x, hash(ivec3(I, seed)).x * worldSize.y)`,
   HORIZONTAL_LINE_AT: (y) =>
     `vec2(hash(ivec3(I, seed)).x * worldSize.x, ${y}*worldSize.y)`,
+  SIN: (period, radius) =>
+    `vec2(hash(ivec3(I, seed)).x * worldSize.x,   sin(hash(ivec3(I, seed)).x * TAU / ${period}) * ${radius} * worldSize.y + worldSize.y/2.)`,
 };
 
 export class Automata {

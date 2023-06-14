@@ -55,7 +55,7 @@ new Physarum({
   particleColor: [Math.random(), Math.random(), Math.random(), Math.random()],
   mouseRadius: Math.random() * 0.25,
   mouseStrength: Math.random() - 0.5,
-  initialParticlesXY: DISTRIBUTIONS.VERTICLE_LINE,
+  initialParticlesXY: DISTRIBUTIONS.SIN(0.25, 0.25),
 });
 
 new Physarum({
