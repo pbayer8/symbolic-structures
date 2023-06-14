@@ -5,7 +5,6 @@ import "./style.css";
 
 // TODO: initial particle distribution (random, grid, circle, etc.)
 // TODO: collision detection using field.w > threshold optional convention
-// TODO: particle life
 // TODO: particle lenia
 // TODO: particles in force field
 // TODO: gravity
@@ -75,10 +74,10 @@ export class Automata {
     shareField = true,
     readOtherFields = false,
     readOtherParticles = false,
-    renderParticles = "mix(vec4(0.), renderParticlesColor, smoothstep(1.0, 0.0, length(XY)))",
-    renderParticlesColor = [1, 1, 1, 1],
-    renderField = "mix(vec4(0.), renderFieldColor, length(field(UV))/2.)",
-    renderFieldColor = [1, 1, 1, 1],
+    renderParticles = "mix(vec4(0.), particleColor, smoothstep(1.0, 0.0, length(XY)))",
+    particleColor = [1, 1, 1, 1],
+    renderField = "mix(vec4(0.), fieldColor, length(field(UV))/2.)",
+    fieldColor = [1, 1, 1, 1],
     writeField = "smoothstep(1.0, 0.0, length(XY))",
     writeFieldBlend = BLEND_MODES.ADD,
     renderFieldBlend = BLEND_MODES.ADD,
@@ -101,6 +100,8 @@ export class Automata {
     numSteps = 1,
     numStorysParticles = 2,
     wrapParticles = true,
+    mouseStrength = 0.1,
+    mouseRadius = 0.25,
   } = {}) {
     this.instances = Automata.instances;
     this.index = Automata.instances.length;
@@ -131,8 +132,10 @@ export class Automata {
     param("updateFieldDecay", updateFieldDecay);
     param("updateFieldBlur", updateFieldBlur);
     param("updateFieldSteps", updateFieldSteps);
-    param("renderParticlesColor", renderParticlesColor);
-    param("renderFieldColor", renderFieldColor);
+    param("particleColor", particleColor);
+    param("fieldColor", fieldColor);
+    param("mouseStrength", mouseStrength);
+    param("mouseRadius", mouseRadius);
     Object.entries(this.uniforms).forEach(([key, value]) =>
       param(key, value, this.uniforms)
     );
@@ -176,14 +179,14 @@ export class Automata {
   }
   render(glsl) {
     glsl({
-      renderFieldColor: this.renderFieldColor,
+      fieldColor: this.fieldColor,
       Blend: this.renderFieldBlend,
       field: this.field[0],
       FP: this.renderField,
       ...this.uniforms,
     });
     glsl({
-      renderParticlesColor: this.renderParticlesColor,
+      particleColor: this.particleColor,
       Blend: this.renderParticlesBlend,
       particles: this.particles[0],
       Grid: this.particles[0].size,
@@ -239,6 +242,8 @@ export class Automata {
         mouse,
         time,
         timeDelta,
+        mouseStrength: this.mouseStrength,
+        mouseRadius: this.mouseRadius,
         ...(this.numStorysParticles > 2 ? { past: this.particles[1] } : {}),
         seed: this.seed,
         field: this.shareField && sharedField ? sharedField : this.field[0],
@@ -263,6 +268,14 @@ export class Automata {
           ? this.updateParticles()
           : this.updateParticles
       }
+      vec2 mousePos = mouse.xy;
+      float aspectRatio = worldSize.x/worldSize.y;
+      vec2 aspectMult = aspectRatio > 1. ? vec2(aspectRatio, 1.) : vec2(1., 1./aspectRatio);
+      float mouseDist = length(mousePos*worldSize - FOut.xy);
+      mouseDist = min(mouseDist, length((mousePos+worldSize)*worldSize - FOut.xy));
+      mouseDist = min(mouseDist, length((mousePos-worldSize)*worldSize - FOut.xy));
+      float strength = mouse.z * smoothstep(mouseRadius, 0., mouseDist/max(worldSize.x, worldSize.y));
+      FOut.xy += mouseStrength * strength * (mousePos*worldSize - FOut.xy);
       ${this.wrapParticles ? "FOut.xy = mod(FOut.xy, worldSize);" : ""}`,
       },
       this.particles
@@ -274,6 +287,7 @@ export class Automata {
         time,
         timeDelta,
         seed: this.seed,
+        mouseStrength: this.mouseStrength,
         particles: this.particles[0],
         Grid: this.particles[0].size,
         particleSize: this.particleSize,
