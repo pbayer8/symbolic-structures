@@ -1,4 +1,4 @@
-import"./style-9feaaabd.js";import{R as f}from"./regl-a5845c54.js";import{m as i}from"./mouse-c0624d90.js";const e=f();let o=Math.random()*50,s=Math.random()*6e-4,r=Math.random()-.5,t=!1;const n=1e4,l=Array(n).fill(0).map((g,m)=>[m/n]),c=4*l[0].length,u=e.buffer(l),d=Array(window.innerWidth*window.innerHeight*4).fill(0),a=e.framebuffer({color:e.texture({shape:[window.innerWidth,window.innerHeight],data:d}),depthStencil:!1}),p=e({vert:`
+import{m as i}from"./style-71523510.js";import{R as f}from"./regl-a5845c54.js";const e=f();let o=Math.random()*50,s=Math.random()*6e-4,r=Math.random()-.5,t=!1;const n=1e4,l=Array(n).fill(0).map((g,m)=>[m/n]),c=4*l[0].length,u=e.buffer(l),d=Array(window.innerWidth*window.innerHeight*4).fill(0),a=e.framebuffer({color:e.texture({shape:[window.innerWidth,window.innerHeight],data:d}),depthStencil:!1}),p=e({vert:`
   precision mediump float;
   attribute float index;
   uniform float time;
