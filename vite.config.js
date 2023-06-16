@@ -11,6 +11,7 @@ export default defineConfig(({ command }) => {
           screensaver: resolve(__dirname, "paths/screensaver.html"),
           stars: resolve(__dirname, "paths/stars.html"),
           cell: resolve(__dirname, "paths/cell.html"),
+          life: resolve(__dirname, "paths/life.html"),
         },
       },
     },
