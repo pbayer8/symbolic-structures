@@ -76,9 +76,15 @@ export const DISTRIBUTIONS = {
   VERTICLE_LINE: `vec2(worldSize.x/2., hash(ivec3(I, seed)).x * worldSize.y)`,
   HORIZONTAL_LINE: `vec2(hash(ivec3(I, seed)).x * worldSize.x, worldSize.y/2.)`,
   VERTICLE_LINES: (count) =>
-    `vec2(fract(vec2(I).x / ${count}.0) * worldSize.x, fract(hash(ivec3(I, seed)).xy * ${count}.0) * worldSize.y)`,
+    `vec2(
+      fract(vec2(I).x / ${count}.0) * worldSize.x, 
+      fract(hash(ivec3(I, seed)).y * ${count}.0) * worldSize.y
+    )`,
   HORIZONTAL_LINES: (count) =>
-    `vec2(fract(hash(ivec3(I, seed)).xy * ${count}.0) * worldSize.x, fract(vec2(I).x / ${count}.0) * worldSize.y)`,
+    `vec2(
+      fract(hash(ivec3(I, seed)).x * ${count}.0) * worldSize.x, 
+      fract(vec2(I).y / ${count}.0) * worldSize.y
+    )`,
   ZERO: `vec2(0.)`,
   CONST: (x, y) => `vec2(${x}, ${y})`,
   VERTICLE_LINE_AT: (x) =>

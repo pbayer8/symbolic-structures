@@ -7,7 +7,7 @@ export class ParticleLife extends Automata {
       particleCount: 50,
       particleSize: 5,
       // renderField: `0.`,
-      renderField: "mix(vec4(0.), fieldColor, length(field(UV))/2.)*.25",
+      renderField: "mix(vec4(0.), fieldColor, length(field(UV))/2.)",
       readOtherParticles: true,
       initialParticlesZW: DISTRIBUTIONS.RANDOM_UNIT,
       updateParticles: () => `
@@ -28,8 +28,9 @@ export class ParticleLife extends Automata {
     if (r>0.&&r<rMax) {
       float f = 0.;
       if (r<beta) f = r/beta-1.;
-      else if (beta<r&&r<1.) f = F[${Math.round(
-        index
+      else if (beta<r&&r<1.) f = F[${Math.min(
+        Math.round(index),
+        3
       )}]*(1.-abs(2.*r-1.-beta)/(1.-beta));
       force += dpos/r*f; // add net force (attraction - repulsion) to the force vector
     }
