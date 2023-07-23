@@ -44,13 +44,7 @@ const species = {
     particleSize: random(0.1, 1),
     particleCount: randomInt(5000, 80000),
   }),
-};
-const params = {
-  bgColor,
-  bgLength,
-  numSpecies,
-  blendMode,
-  sharedProps: {
+  shared: () => ({
     particleColor: randomArray(4, 0, 1 / numSpecies),
     fieldColor: randomArray(4, 0, 1 / numSpecies),
     renderFieldBlend: blendMode,
@@ -67,10 +61,19 @@ const params = {
       DISTRIBUTIONS.VERTICLE_LINES(randomInt(2, 20)),
       DISTRIBUTIONS.HORIZONTAL_LINES(randomInt(2, 20)),
     ]),
-  },
+  }),
+};
+const params = {
+  bgColor,
+  bgLength,
+  numSpecies,
+  blendMode,
   species: Array(numSpecies)
     .fill()
-    .map(() => (random() > 0.5 ? species.life() : species.physarum())),
+    .map(() => ({
+      ...species.shared(),
+      ...(random() > 0.5 ? species.life() : species.physarum()),
+    })),
   ...decodeObjectFromUrl(),
 };
 
@@ -81,7 +84,6 @@ renderSharedField(params.bgColor.join(","));
 params.species.forEach((specimen) =>
   specimen.type === "life"
     ? new ParticleLife({
-        ...params.sharedProps,
         ...specimen,
         renderParticles: `
     vec2 velocity = particle.zw;
