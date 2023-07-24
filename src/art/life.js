@@ -1,14 +1,8 @@
 import { BLEND_MODES, DISTRIBUTIONS, renderSharedField } from "../automata";
+import { decodeObjectFromUrl, encodeObjectInUrl } from "../encoding";
 import { ParticleLife } from "../particle-life";
 import { Physarum } from "../physarum";
-import {
-  decodeObjectFromUrl,
-  encodeObjectInUrl,
-  random,
-  randomArray,
-  randomChoice,
-  randomInt,
-} from "../utils";
+import { random, randomArray, randomChoice, randomInt } from "../utils";
 
 const whiteLength = Math.sqrt(3);
 const bgColor = randomArray(4, 0, 0.1);
