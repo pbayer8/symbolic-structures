@@ -1,8 +1,8 @@
-// import LZString from "lz-string";
+import LZString from "lz-string";
 import qs from "qs";
 
 const PART_SPLIT = "";
-const COMPRESS = false;
+const COMPRESS = true;
 const MINIFY = true;
 const ROUND = 2;
 // sortred by approx frequency of use
@@ -123,10 +123,9 @@ export const encodeObjectInUrl = (obj) => {
         type
       ),
   });
-  url.search = params;
-  // COMPRESS
-  // ? LZString.compressToEncodedURIComponent(params)
-  // : params;
+  url.search = COMPRESS
+    ? LZString.compressToEncodedURIComponent(params)
+    : params;
   setTimeout(() => console.log("URL PARAM LENGTH", url.search.length), 100);
   window.history.replaceState({}, "", url);
 };
@@ -134,10 +133,9 @@ export const encodeObjectInUrl = (obj) => {
 export const decodeObjectFromUrl = () => {
   const url = new URL(window.location.href);
   const params = qs.parse(
-    url.search,
-    // COMPRESS
-    // ? LZString.decompressFromEncodedURIComponent(url.search.split("?")[1])
-    // : url.search,
+    COMPRESS
+      ? LZString.decompressFromEncodedURIComponent(url.search.split("?")[1])
+      : url.search,
     {
       ignoreQueryPrefix: true,
       decoder: (param, defaultDecoder, charset, type) => {
