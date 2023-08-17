@@ -2,6 +2,9 @@ export const random = (min = 0, max = 1) => Math.random() * (max - min) + min;
 
 export const randomInt = (min, max) => Math.floor(random(min, max));
 
+export const randomCentered = (radius = 1, center = 0) =>
+  random(center - radius, center + radius);
+
 export const randomChoice = (arr) => arr[randomInt(0, arr.length)];
 
 export const randomChoiceWeighted = (arr, weights) => {

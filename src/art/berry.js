@@ -1,7 +1,7 @@
 import SwissGL from "swissgl";
-import { mouseCentered } from "./mouse";
-import "./style.css";
-import { random, randomCentered, randomChoice, randomInt } from "./utils";
+import { mouseCentered } from "../mouse";
+import "../style.css";
+import { random, randomCentered, randomChoice, randomInt } from "../utils";
 const canvas = document.createElement("canvas");
 const size = Math.min(window.innerWidth, window.innerHeight);
 // canvas.width = size;
