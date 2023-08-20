@@ -1,4 +1,4 @@
-import{a as i}from"./style-d20be366.js";import{R as l}from"./regl-2edf780c.js";import"./_commonjsHelpers-edff4021.js";const o=l();let t=Math.random()*100,s=Math.random()*2e-4,n=Math.random()-.5,e=!1;const a=1e4,m=4,c=o.buffer(Array(a).fill(0).map((d,r)=>[r/a])),f=o({vert:`
+import{m as i}from"./style-7da4ff8e.js";import{R as l}from"./regl-2edf780c.js";import"./_commonjsHelpers-edff4021.js";const o=l();let t=Math.random()*100,s=Math.random()*2e-4,n=Math.random()-.5,e=!1;const a=1e4,m=4,c=o.buffer(Array(a).fill(0).map((d,r)=>[r/a])),f=o({vert:`
   precision mediump float;
   attribute float index;
   uniform float time;

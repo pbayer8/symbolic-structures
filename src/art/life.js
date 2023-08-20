@@ -2,6 +2,7 @@ import { BLEND_MODES, DISTRIBUTIONS, renderSharedField } from "../automata";
 import { decodeObjectFromUrl, encodeObjectInUrl } from "../encoding";
 import { ParticleLife } from "../particle-life";
 import { Physarum } from "../physarum";
+import "../refresh-button";
 import { random, randomArray, randomChoice, randomInt } from "../utils";
 
 const whiteLength = Math.sqrt(3);

@@ -1,0 +1,1 @@
+const n=(a=0,o=1)=>Math.random()*(o-a)+a,t=(a,o)=>Math.floor(n(a,o)),s=(a=1,o=0)=>n(o-a,o+a),d=a=>a[t(0,a.length)],c=(a,o=0,r=1)=>Array(a).fill().map(()=>n(o,r));export{n as a,t as b,d as c,s as d,c as r};
