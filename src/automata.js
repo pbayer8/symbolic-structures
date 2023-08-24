@@ -210,21 +210,31 @@ export class Automata {
   }
   render(glsl) {
     glsl({
-      fieldColor: this.fieldColor,
+      ...(Array.isArray(this.fieldColor)
+        ? { fieldColor: this.fieldColor }
+        : {}),
       Blend: this.renderFieldBlend,
       field: this.field[0],
-      FP: this.renderField,
+      FP:
+        typeof this.fieldColor === "string"
+          ? this.renderField.replaceAll("fieldColor", this.fieldColor)
+          : this.renderField,
       ...this.uniforms,
     });
     glsl({
-      particleColor: this.particleColor,
+      ...(Array.isArray(this.particleColor)
+        ? { particleColor: this.particleColor }
+        : {}),
       Blend: this.renderParticlesBlend,
       particles: this.particles[0],
       Grid: this.particles[0].size,
       particleSize: this.particleSize,
       Inc: "varying vec4 particle;",
       VP: this.standardParticlesVP,
-      FP: this.renderParticles,
+      FP:
+        typeof this.particleColor === "string"
+          ? this.renderParticles.replaceAll("particleColor", this.particleColor)
+          : this.renderParticles,
     });
   }
   reset() {
