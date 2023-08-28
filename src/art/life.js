@@ -3,7 +3,7 @@ import { decodeObjectFromUrl, encodeObjectInUrl } from "../encoding";
 import { ParticleLife } from "../particle-life";
 import { Physarum } from "../physarum";
 import "../refresh-button";
-import { random, randomArray, randomChoice, randomInt } from "../utils";
+import { glsl, random, randomArray, randomChoice, randomInt } from "../utils";
 
 const whiteLength = Math.sqrt(3);
 const bgColor = randomArray(4, 0, 0.1);
@@ -80,7 +80,7 @@ params.species.forEach((specimen) =>
   specimen.type === "life"
     ? new ParticleLife({
         ...specimen,
-        renderParticles: `
+        renderParticles: glsl`
     vec2 velocity = particle.zw;
     float angle = atan(velocity.x, velocity.y);
     vec2 XYS = XY;

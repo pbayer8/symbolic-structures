@@ -2,13 +2,14 @@ import GUI from "lil-gui";
 import SwissGL from "swissgl";
 import { mouse } from "../mouse";
 import "../style.css";
+import { glsl } from "../utils";
 
 const canvas = document.createElement("canvas");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 document.body.appendChild(canvas);
 // create WebGL2 context end SwissGL
-const glsl = SwissGL(canvas);
+const gl = SwissGL(canvas);
 const fields = {};
 const fieldFactors = {};
 const colors = {};
@@ -58,19 +59,19 @@ class Physarum {
   // Method to run the simulation for a certain number of steps
   frame() {
     for (let i = 0; i < this.U.step_n; ++i) {
-      this.step(glsl);
+      this.step(gl);
     }
     // Update the output using the field and the parameters
-    glsl({
+    gl({
       ...fields,
       ...this.U,
       ...colors,
       Clear: clearColor,
       Blend: "s+d",
-      FP: `${Object.keys(fields)
+      FP: glsl`${Object.keys(fields)
         .map(
           (k, i) =>
-            `FOut = mix(vec4(FOut.xyz,1.),color${i},${k}(UV*viewScale).x)`
+            glsl`FOut = mix(vec4(FOut.xyz,1.),color${i},${k}(UV*viewScale).x)`
         )
         .join(";")};
         `,
@@ -78,16 +79,16 @@ class Physarum {
   }
 
   // Method to perform one simulation step
-  step(glsl) {
+  step(gl) {
     fieldFactors["fieldFactor" + this.index] = this.U.fieldFactor;
     colors["color" + this.index] = this.U.displayColor;
 
     // Update the field based on the source step and the surrounding cells
-    this.field = glsl(
+    this.field = gl(
       {
         mouse,
         ...edge,
-        FP: `
+        FP: glsl`
       vec2 dp = Src_step();
       float x=UV.x, y=UV.y;
       float l=x-dp.x, r=x+dp.x, u=y-dp.y, d=y+dp.y;
@@ -104,14 +105,14 @@ class Physarum {
     fields["field" + this.index] = this.field[0];
 
     // Update the particles based on the field and the parameters
-    this.points = glsl(
+    this.points = gl(
       {
         field: this.field[0],
         ...fields,
         ...fieldFactors,
         ...this.U,
         mouse,
-        FP: `
+        FP: glsl`
       FOut = Src(I);
       vec2 worldSize = vec2(field_size());
       float aspectRatio = worldSize.x/worldSize.y;
@@ -131,7 +132,7 @@ class Physarum {
       vec2 aspectMult = aspectRatio > 1. ? vec2(aspectRatio, 1.) : vec2(1., 1./aspectRatio);
       // Macro to sample the field at the given position
       #define F(p) ${Object.keys(fields)
-        .map((k, i) => `${k}((FOut.xy+p)/worldSize).x*fieldFactor${i}`)
+        .map((k, i) => glsl`${k}((FOut.xy+p)/worldSize).x*fieldFactor${i}`)
         .join(
           "+"
         )}+50.*smoothstep(.2,0.,length(((FOut.xy+p)/worldSize-mousePos)*aspectMult))
@@ -162,16 +163,16 @@ class Physarum {
     );
 
     // Render the updated particles to the field texture
-    glsl(
+    gl(
       {
         points: this.points[0],
         Grid: this.points[0].size,
         ...this.U,
         Blend: "s+d",
-        VP: `
+        VP: glsl`
       // Calculate the vertex position in clip space
       VOut.xy = 2.0 * (points(ID.xy).xy+XY*2.0)/vec2(ViewSize) - 1.0;`,
-        FP: `
+        FP: glsl`
       // Calculate the fragment color based on the distance to the particle center
       smoothstep(1.0, 0.0, length(XY)*2.)
       `,

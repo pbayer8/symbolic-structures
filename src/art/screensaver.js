@@ -1,6 +1,7 @@
 import REGL from "regl";
 import { mouse } from "../mouse";
 import "../style.css";
+import { glsl } from "../utils";
 
 const regl = REGL();
 let time = Math.random() * 50;
@@ -31,7 +32,7 @@ const drawbuffer = regl.framebuffer({
 });
 
 const drawParticles = regl({
-  vert: `
+  vert: glsl`
   precision mediump float;
   attribute float index;
   uniform float time;
@@ -67,7 +68,7 @@ const drawParticles = regl({
     fragColor = vec3(.1,(position.x + 0.5)/6.,(position.y + 0.5)/2.);
   }`,
 
-  frag: `
+  frag: glsl`
   precision mediump float;
   varying vec3 fragColor;
   uniform float time;
@@ -108,7 +109,7 @@ const drawParticles = regl({
 });
 
 const draw = regl({
-  vert: `
+  vert: glsl`
   precision mediump float;
   attribute vec2 position;
   varying vec2 uv;
@@ -118,7 +119,7 @@ const draw = regl({
     uv = position/2. + 0.5;
     gl_Position = vec4(position, 0, 1);
   }`,
-  frag: `
+  frag: glsl`
   precision mediump float;
   varying vec2 uv;
   uniform sampler2D texture;

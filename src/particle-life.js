@@ -1,4 +1,5 @@
 import { Automata, DISTRIBUTIONS } from "./automata";
+import { glsl } from "./utils";
 
 export class ParticleLife extends Automata {
   static instances = [];
@@ -6,17 +7,17 @@ export class ParticleLife extends Automata {
     super({
       particleCount: 50,
       particleSize: 5,
-      // renderField: `0.`,
-      renderField: "mix(vec4(0.), fieldColor, length(field(UV))/2.)",
+      // renderField: glsl`0.`,
+      renderField: glsl`mix(vec4(0.), fieldColor, length(field(UV))/2.)`,
       readOtherParticles: true,
       initialParticlesZW: DISTRIBUTIONS.RANDOM_UNIT,
-      updateParticles: () => `
+      updateParticles: () => glsl`
   FOut = Src(I); // current particle
   #define wrap(p) (fract(p+0.5)-0.5)
   vec2 force=vec2(0.); // initialize force vector to 0
   ${ParticleLife.instances
     .map(
-      (i, index) => `// Looping through all particles to compute forces
+      (i, index) => glsl`// Looping through all particles to compute forces
   for (int y=0; y<particles_${i.name}_size().y; ++y)
   for (int x=0; x<particles_${i.name}_size().x; ++x) {
     if (x==I.x && y==I.y) continue; // Skip self
@@ -44,7 +45,7 @@ export class ParticleLife extends Automata {
 
   // Compute new velocity and position
   FOut.xy = FOut.xy+FOut.zw;
-  `,
+`,
       ...params,
       uniforms: {
         dt: 0.01,

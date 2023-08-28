@@ -2,6 +2,7 @@ import GUI from "lil-gui";
 import SwissGL from "swissgl";
 import { mouse } from "./mouse";
 import "./style.css";
+import { glsl } from "./utils";
 
 // TODO: collision detection using field.w > threshold optional convention
 // TODO: particle lenia
@@ -20,7 +21,7 @@ const canvas = document.createElement("canvas");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 document.body.appendChild(canvas);
-export const glsl = SwissGL(canvas);
+export const gl = SwissGL(canvas);
 
 export const renderSharedField = (v) => (_renderSharedField = v);
 
@@ -29,7 +30,7 @@ function frame(t) {
   time = t / 1000;
   requestAnimationFrame(frame);
   if (sharedField)
-    glsl({
+    gl({
       field: sharedField,
       FP: _renderSharedField,
     });
@@ -39,7 +40,7 @@ function frame(t) {
       .filter((i) => i.shareField)
       .map((i) => [`field_${i.name}`, i.field[0]])
   );
-  sharedField = glsl(
+  sharedField = gl(
     {
       Clear: [0, 0, 0, 0],
       ...sharedFieldInstances,
@@ -64,35 +65,35 @@ export const BLEND_MODES = {
 };
 
 export const DISTRIBUTIONS = {
-  RANDOM_WORLD: `hash(ivec3(I, seed)).xy * worldSize`,
-  RANDOM_ANGLE: `vec2(hash(ivec3(I, seed)).x * TAU,1.0)`,
-  RANDOM_RANGE: `hash(ivec3(I, seed)).xy * 2. - 1.`,
-  RANDOM_UNIT: `normalize(hash(ivec3(I, seed)).xy * 2. - 1.)`,
-  RANDOM: `hash(ivec3(I, seed)).xy`,
-  RANDOM2: `hash(ivec3(seed, I*2)).xy`,
-  DOT_GRID: (count) => `fract(vec2(I) / ${count}.0) * worldSize`,
+  RANDOM_WORLD: glsl`hash(ivec3(I, seed)).xy * worldSize`,
+  RANDOM_ANGLE: glsl`vec2(hash(ivec3(I, seed)).x * TAU,1.0)`,
+  RANDOM_RANGE: glsl`hash(ivec3(I, seed)).xy * 2. - 1.`,
+  RANDOM_UNIT: glsl`normalize(hash(ivec3(I, seed)).xy * 2. - 1.)`,
+  RANDOM: glsl`hash(ivec3(I, seed)).xy`,
+  RANDOM2: glsl`hash(ivec3(seed, I*2)).xy`,
+  DOT_GRID: (count) => glsl`fract(vec2(I) / ${count}.0) * worldSize`,
   CIRCLE: (radius) =>
-    `vec2(cos(hash(ivec3(I, seed)).x * TAU), sin(hash(ivec3(I, seed)).x * TAU)) * ${radius} * max(worldSize.x,worldSize.y) - worldSize/2.`,
-  VERTICLE_LINE: `vec2(worldSize.x/2., hash(ivec3(I, seed)).x * worldSize.y)`,
-  HORIZONTAL_LINE: `vec2(hash(ivec3(I, seed)).x * worldSize.x, worldSize.y/2.)`,
+    glsl`vec2(cos(hash(ivec3(I, seed)).x * TAU), sin(hash(ivec3(I, seed)).x * TAU)) * ${radius} * max(worldSize.x,worldSize.y) - worldSize/2.`,
+  VERTICLE_LINE: glsl`vec2(worldSize.x/2., hash(ivec3(I, seed)).x * worldSize.y)`,
+  HORIZONTAL_LINE: glsl`vec2(hash(ivec3(I, seed)).x * worldSize.x, worldSize.y/2.)`,
   VERTICLE_LINES: (count) =>
-    `vec2(
+    glsl`vec2(
       fract(vec2(I).x / ${count}.0) * worldSize.x, 
       fract(hash(ivec3(I, seed)).y * ${count}.0) * worldSize.y
     )`,
   HORIZONTAL_LINES: (count) =>
-    `vec2(
+    glsl`vec2(
       fract(hash(ivec3(I, seed)).x * ${count}.0) * worldSize.x, 
       fract(vec2(I).y / ${count}.0) * worldSize.y
     )`,
-  ZERO: `vec2(0.)`,
-  CONST: (x, y) => `vec2(${x}, ${y})`,
+  ZERO: glsl`vec2(0.)`,
+  CONST: (x, y) => glsl`vec2(${x}, ${y})`,
   VERTICLE_LINE_AT: (x) =>
-    `vec2(${x}*worldSize.x, hash(ivec3(I, seed)).x * worldSize.y)`,
+    glsl`vec2(${x}*worldSize.x, hash(ivec3(I, seed)).x * worldSize.y)`,
   HORIZONTAL_LINE_AT: (y) =>
-    `vec2(hash(ivec3(I, seed)).x * worldSize.x, ${y}*worldSize.y)`,
+    glsl`vec2(hash(ivec3(I, seed)).x * worldSize.x, ${y}*worldSize.y)`,
   SIN: (period, radius) =>
-    `vec2(hash(ivec3(I, seed)).x * worldSize.x,   sin(hash(ivec3(I, seed)).x * TAU / ${period}) * ${radius} * worldSize.y + worldSize.y/2.)`,
+    glsl`vec2(hash(ivec3(I, seed)).x * worldSize.x,   sin(hash(ivec3(I, seed)).x * TAU / ${period}) * ${radius} * worldSize.y + worldSize.y/2.)`,
 };
 
 export class Automata {
@@ -105,18 +106,18 @@ export class Automata {
     shareField = true,
     readOtherFields = false,
     readOtherParticles = false,
-    renderParticles = "mix(vec4(0.), particleColor, smoothstep(1.0, 0.0, length(XY)))",
+    renderParticles = glsl`mix(vec4(0.), particleColor, smoothstep(1.0, 0.0, length(XY)))`,
     particleColor = [1, 1, 1, 1],
-    renderField = "mix(vec4(0.), fieldColor, length(field(UV))/2.)",
+    renderField = glsl`mix(vec4(0.), fieldColor, length(field(UV))/2.)`,
     fieldColor = [1, 1, 1, 1],
-    writeField = "smoothstep(1.0, 0.0, length(XY))",
+    writeField = glsl`smoothstep(1.0, 0.0, length(XY))`,
     writeFieldBlend = BLEND_MODES.ADD,
     renderFieldBlend = BLEND_MODES.ADD,
     renderParticlesBlend = BLEND_MODES.PREMULTIPLIED,
     updateFieldDecay = 0.95,
     updateFieldBlur = 1,
     updateFieldSteps = 1,
-    updateField = `vec2 dp = Src_step()*updateFieldBlur;
+    updateField = glsl`vec2 dp = Src_step()*updateFieldBlur;
     float x=UV.x, y=UV.y;
     float l=x-dp.x, r=x+dp.x, u=y-dp.y, d=y+dp.y;
     #define S(x,y) (Src(vec2(x,y)))
@@ -186,7 +187,7 @@ export class Automata {
     this.updateField = updateField;
     this.shareField = shareField;
     this.seed = Math.floor(Math.random() * 1000);
-    this.standardParticlesVP = `
+    this.standardParticlesVP = glsl`
       particle = particles(ID.xy);
       VOut.xy = 2.0 * (particles(ID.xy).xy+XY*particleSize)/vec2(ViewSize) - 1.0;`;
     this.reset();
@@ -205,11 +206,11 @@ export class Automata {
     navigator.clipboard.writeText(json);
   }
   frame() {
-    for (let i = 0; i < this.numSteps; i++) this.step(glsl);
-    this.render(glsl);
+    for (let i = 0; i < this.numSteps; i++) this.step(gl);
+    this.render(gl);
   }
-  render(glsl) {
-    glsl({
+  render(gl) {
+    gl({
       ...(Array.isArray(this.fieldColor)
         ? { fieldColor: this.fieldColor }
         : {}),
@@ -221,7 +222,7 @@ export class Automata {
           : this.renderField,
       ...this.uniforms,
     });
-    glsl({
+    gl({
       ...(Array.isArray(this.particleColor)
         ? { particleColor: this.particleColor }
         : {}),
@@ -238,35 +239,35 @@ export class Automata {
     });
   }
   reset() {
-    this.field = glsl(
+    this.field = gl(
       {
         FP: this.initialField,
       },
       {
         story: 2,
         format: "rgba32f",
-        tag: `field_${this.name}`,
+        tag: glsl`field_${this.name}`,
       }
     );
     for (let i = 0; i < this.numStorysParticles; i++)
-      this.particles = glsl(
+      this.particles = gl(
         {
           seed: this.seed,
           field: this.shareField && sharedField ? sharedField : this.field[0],
-          FP: `vec2 worldSize = vec2(field_size());
+          FP: glsl`vec2 worldSize = vec2(field_size());
           FOut = vec4(${this.initialParticlesXY}, ${this.initialParticlesZW});`,
         },
         {
           size: Array(2).fill(Math.ceil(Math.sqrt(this.particleCount))),
           story: this.numStorysParticles,
           format: "rgba32f",
-          tag: `particles_${this.name}`,
+          tag: glsl`particles_${this.name}`,
         }
       );
   }
-  step(glsl) {
+  step(gl) {
     for (let i = 0; i < this.updateFieldSteps; i++)
-      glsl(
+      gl(
         {
           updateFieldDecay: Math.pow(
             this.updateFieldDecay,
@@ -277,7 +278,7 @@ export class Automata {
         },
         this.field
       );
-    glsl(
+    gl(
       {
         ...this.uniforms,
         mouse,
@@ -302,7 +303,7 @@ export class Automata {
                 .map((i) => [`particles_${i.name}`, i.particles[0]])
             )
           : {}),
-        FP: `FOut = Src(I);
+        FP: glsl`FOut = Src(I);
       vec2 worldSize = vec2(field_size());
       ${
         typeof this.updateParticles === "function"
@@ -321,7 +322,7 @@ export class Automata {
       },
       this.particles
     );
-    glsl(
+    gl(
       {
         ...this.uniforms,
         mouse,
@@ -349,7 +350,7 @@ export class Worms extends Automata {
       updateFieldBlur: 0,
       updateFieldDecay: 0.99,
       particleSize: 1,
-      updateParticles: `vec2 dir = vec2(cos(FOut.z), sin(FOut.z));
+      updateParticles: glsl`vec2 dir = vec2(cos(FOut.z), sin(FOut.z));
     vec2 pos = FOut.xy;
     vec2 pos2 = pos + dir * senseDist;
     vec4 field = field(pos2);
@@ -375,7 +376,7 @@ export class StrangeWorms extends Automata {
       updateFieldBlur: 0,
       updateFieldDecay: 0.95,
       particleSize: 3,
-      updateParticles: `vec2 dir = vec2(cos(FOut.z), sin(FOut.z));
+      updateParticles: glsl`vec2 dir = vec2(cos(FOut.z), sin(FOut.z));
     vec2 pos = FOut.xy;
     vec2 pos2 = pos + dir * senseDist;
     vec4 field = field(pos2);
@@ -402,7 +403,7 @@ export class velocityField extends Automata {
       updateFieldDecay: 0.9,
       particleSize: 0.5,
       initialParticlesZW: DISTRIBUTIONS.RANDOM_UNIT,
-      updateParticles: `
+      updateParticles: glsl`
   vec2 dir = FOut.zw;
   vec4 fieldData = field(FOut.xy/worldSize);
   vec2 fieldDir = fieldData.xy;
@@ -413,10 +414,10 @@ export class velocityField extends Automata {
   meanDir = normalize(meanDir);
   FOut.xy += meanDir*moveDist;
   FOut.zw = meanDir;`,
-      writeField: `vec2 dir = particle.zw;
+      writeField: glsl`vec2 dir = particle.zw;
   FOut.xy = dir;
   FOut.z += 1.;`,
-      renderField: `vec3 f = field(UV).xyz;
+      renderField: glsl`vec3 f = field(UV).xyz;
   FOut.xy = abs(f.xy);
   FOut.z = smoothstep(0., explosion/6., f.z);`,
       uniforms: {

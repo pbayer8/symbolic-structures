@@ -19,3 +19,5 @@ export const randomArray = (length, min = 0, max = 1) =>
   Array(length)
     .fill()
     .map(() => random(min, max));
+
+export const glsl = (s, ...v) => String.raw(s, ...v);

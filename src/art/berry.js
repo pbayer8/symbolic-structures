@@ -1,7 +1,13 @@
 import SwissGL from "swissgl";
 import { mouseCentered } from "../mouse";
 import "../style.css";
-import { random, randomCentered, randomChoice, randomInt } from "../utils";
+import {
+  glsl,
+  random,
+  randomCentered,
+  randomChoice,
+  randomInt,
+} from "../utils";
 const canvas = document.createElement("canvas");
 const size = Math.min(window.innerWidth, window.innerHeight);
 // canvas.width = size;
@@ -47,7 +53,7 @@ const points = Array(NUM_POINTS)
   });
 
 // create WebGL2 context end SwissGL
-const glsl = SwissGL(canvas);
+const gl = SwissGL(canvas);
 function render(t) {
   t /= 1000; // ms to sec
   points.forEach((p, i) => {
@@ -81,15 +87,14 @@ function render(t) {
     // p[0] *= 0.99;
     // p[1] *= 0.99;
   });
-  glsl({
+  gl({
     t,
-    Inc: `
+    Inc: glsl`
     // 2D noise function
     float noise(vec2 p) {
       return fract(sin(dot(p.xy, vec2(12.9898, 78.233))) * 43758.5453);
-    }
-    `,
-    FP: `
+    }`,
+    FP: glsl`
     FOut = vec4(180./255.,180./255.,230./255.,1.0);
     vec3 color = vec3(0.);
     float strength = 0.0;
@@ -113,7 +118,7 @@ function render(t) {
           subtractOffsetY,
           subtractStrength,
         }) =>
-          `len = length(xy-vec2(${x},${y}));
+          glsl`len = length(xy-vec2(${x},${y}));
           offsetLen = length(xy-vec2(${x}+${subtractOffsetX},${y}+${subtractOffsetY}));
         strength = smoothstep(${radius + width},${radius},len)
           - smoothstep(${radius - subtractRadiusOffset + subtractWidth},${
@@ -122,8 +127,7 @@ function render(t) {
         cumulativeStrength += strength;
         FOut = mix(FOut,vec4(${r},${g},${b},1.),clamp(strength,0.,1.));
         // FOut += vec4(color,1.0);
-        xy += cumulativeStrength*.04;
-        `
+        xy += cumulativeStrength*.04;`
       )
       .join("\n")}
       FOut += noise (XY*10.)*0.15;`,

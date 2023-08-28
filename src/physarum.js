@@ -1,11 +1,12 @@
 import { Automata } from "./automata";
+import { glsl } from "./utils";
 
 export class Physarum extends Automata {
   constructor(params) {
     super({
       particleCount: 10000,
       particleSize: 1,
-      updateParticles: `
+      updateParticles: glsl`
   vec2 dir = vec2(cos(FOut.z), sin(FOut.z));
   mat2 R = rot2(radians(senseAng));
   vec2 sense = senseDist*dir;
