@@ -1,12 +1,25 @@
+import convert from "color-convert";
 import { BLEND_MODES, DISTRIBUTIONS, renderSharedField } from "../automata";
 import { decodeObjectFromUrl, encodeObjectInUrl } from "../encoding";
 import { ParticleLife } from "../particle-life";
 import { Physarum } from "../physarum";
 import "../refresh-button";
-import { glsl, random, randomArray, randomChoice, randomInt } from "../utils";
+import {
+  glsl,
+  random,
+  randomArray,
+  randomArrayRange,
+  randomChoice,
+  randomInt,
+} from "../utils";
 
 const whiteLength = Math.sqrt(3);
-const bgColor = randomArray(4, 0, 0.1);
+const bgColor = [
+  ...convert.hsl
+    .rgb(randomArrayRange([0, 0, 0], [360, 10, 100]))
+    .map((v) => v / 255),
+  1,
+];
 const bgLength = Math.sqrt(bgColor.slice(0, 3).reduce((a, b) => a + b * b, 0));
 const numSpecies = randomInt(3, 8);
 const blendMode =
