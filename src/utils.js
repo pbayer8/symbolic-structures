@@ -9,7 +9,7 @@ export const randomChoice = (arr) => arr[randomInt(0, arr.length)];
 
 export const randomChoiceWeighted = (arr, weights) => {
   const sum = weights.reduce((a, b) => a + b, 0);
-  const r = random(0, sum);
+  let r = random(0, sum);
   let i = 0;
   while (r > weights[i]) r -= weights[i++];
   return arr[i];
